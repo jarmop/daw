@@ -19,8 +19,6 @@ Slider :: struct {
 	max:   f32,
 }
 
-sliders: [3]Slider
-
 bar_width: f32 = 100
 bar_height: f32 = 2
 handle_size: f32 = font_size

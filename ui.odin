@@ -13,17 +13,39 @@ Vertex :: struct {
 
 padding :: 4
 
+sliders: [6]Slider
+
 ui_run :: proc() {
 	window_init()
 	waveform_init()
 
 	slider_init()
+	sliders_x: f32 = 110
 	sliders = {
-		{pos = {110, line_height / 2}, value = &frequency, max = max_frequency},
-		{pos = {110, line_height + line_height / 2}, value = &amplitude, max = max_amplitude},
+		{pos = {sliders_x, line_height / 2}, value = &frequency, max = max_frequency},
 		{
-			pos = {110, 2 * line_height + line_height / 2},
+			pos = {sliders_x, line_height + line_height / 2},
+			value = &amplitude,
+			max = max_amplitude,
+		},
+		{
+			pos = {sliders_x, 2 * line_height + line_height / 2},
 			value = &envelope[0].duration,
+			max = envelope_max_duration,
+		},
+		{
+			pos = {sliders_x, 3 * line_height + line_height / 2},
+			value = &envelope[1].duration,
+			max = envelope_max_duration,
+		},
+		{
+			pos = {sliders_x, 4 * line_height + line_height / 2},
+			value = &envelope[2].duration,
+			max = envelope_max_duration,
+		},
+		{
+			pos = {sliders_x, 5 * line_height + line_height / 2},
+			value = &envelope[3].duration,
 			max = envelope_max_duration,
 		},
 	}
