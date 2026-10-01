@@ -24,6 +24,7 @@ left_mouse_first_press := true
 x_prev: f32 = 0
 slider_dragged: ^Slider
 slider_hovered: ^Slider
+is_slider_handle_hovered := false
 button_hovered: ^Button
 
 window_init :: proc() {
@@ -68,7 +69,17 @@ mouse_button_callback :: proc "c" (window: glfw.WindowHandle, button, action, mo
 			left_mouse_pressed = true
 
 			if slider_hovered != nil {
-				slider_dragged = slider_hovered
+				// slider_dragged = slider_hovered
+				// slider_dragged.value^ = s.value^ + (f32(x_diff) / bar_width * s.max)
+				x64, y64 := glfw.GetCursorPos(window)
+				x := f32(x64)
+				s := slider_hovered
+				s.value^ = (x - s.pos.x) / bar_width * s.max
+				s.on_value_changed()
+
+				if is_slider_handle_hovered {
+					slider_dragged = slider_hovered
+				}
 			} else if button_hovered != nil {
 				button_hovered.on_click()
 			}
@@ -115,7 +126,24 @@ cursor_pos_callback :: proc "c" (window: glfw.WindowHandle, xpos, ypos: f64) {
 		s.on_value_changed()
 
 	} else if !left_mouse_pressed {
-		slider_hovered = cursor_within_slider_handle()
+		// slider_hovered = cursor_within_slider_handle()
+		slider_hovered = cursor_within_slider_bar()
+		if slider_hovered != nil {
+			x64, y64 := glfw.GetCursorPos(window)
+			x := f32(x64)
+			y := f32(y64)
+			s := slider_hovered
+			handle_x := s.value^ / s.max * bar_width - handle_size / 2
+			handle_y := (-handle_size + bar_height) / 2
+			handle_pos := s.pos + {handle_x, handle_y}
+			is_slider_handle_hovered =
+				x >= handle_pos.x &&
+				x <= handle_pos.x + handle_size &&
+				y >= handle_pos.y &&
+				y <= handle_pos.y + handle_size
+		} else {
+			is_slider_handle_hovered = false
+		}
 		button_hovered = cursor_within_button()
 		if slider_hovered != nil || button_hovered != nil {
 			glfw.SetCursor(window, glfw.CreateStandardCursor(glfw.POINTING_HAND_CURSOR))
@@ -140,6 +168,23 @@ cursor_within_slider_handle :: proc() -> ^Slider {
 			   y >= handle_pos.y &&
 			   y <= handle_pos.y + handle_size) {
 			return &slider
+		}
+	}
+
+	return nil
+}
+
+cursor_within_slider_bar :: proc() -> ^Slider {
+	x64, y64 := glfw.GetCursorPos(window)
+	x := f32(x64)
+	y := f32(y64)
+	handle_y := (-handle_size + bar_height) / 2
+
+	for &s, i in sliders {
+		y_start := s.pos.y - handle_size / 2
+		y_end := y_start + handle_size
+		if x >= s.pos.x && x <= s.pos.x + bar_width && y >= y_start && y < y_end {
+			return &s
 		}
 	}
 
