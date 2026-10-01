@@ -21,7 +21,7 @@ waveform_key_map := map[i32]Waveform {
 
 left_mouse_pressed := false
 left_mouse_first_press := true
-xpos_prev: f64 = 0
+x_prev: f32 = 0
 slider_dragged: ^Slider
 slider_hovered: ^Slider
 button_hovered: ^Button
@@ -83,18 +83,36 @@ mouse_button_callback :: proc "c" (window: glfw.WindowHandle, button, action, mo
 cursor_pos_callback :: proc "c" (window: glfw.WindowHandle, xpos, ypos: f64) {
 	context = runtime.default_context()
 
-	if left_mouse_pressed && slider_dragged != nil && cursor_within_slider_bar() {
+	if left_mouse_pressed && slider_dragged != nil {
+		s := slider_dragged
+		x := f32(xpos)
 		if left_mouse_first_press {
-			xpos_prev = xpos
+			x_prev = x
 			left_mouse_first_press = false
 		}
 
-		x_diff := xpos - xpos_prev
-		xpos_prev = xpos
+		x_diff := x - x_prev
+		x_prev = x
 
-		new_value := slider_dragged.value^ + (f32(x_diff) / bar_width * slider_dragged.max)
-		slider_dragged.value^ = min(slider_dragged.max, max(0, new_value))
-		slider_dragged.on_value_changed()
+		s_start := s.pos.x
+		s_end := s.pos.x + bar_width
+		if x < s_start {
+			if x_diff > 0 {
+				return
+			} else if s.value^ != 0 {
+				s.value^ = 0
+			}
+		} else if x > s_end {
+			if x_diff < 0 {
+				return
+			} else if s.value^ != s.max {
+				s.value^ = s.max
+			}
+		} else {
+			s.value^ = s.value^ + (f32(x_diff) / bar_width * s.max)
+		}
+
+		s.on_value_changed()
 
 	} else if !left_mouse_pressed {
 		slider_hovered = cursor_within_slider_handle()
@@ -126,14 +144,6 @@ cursor_within_slider_handle :: proc() -> ^Slider {
 	}
 
 	return nil
-}
-
-cursor_within_slider_bar :: proc() -> bool {
-	x64, y64 := glfw.GetCursorPos(window)
-	x := f32(x64)
-	y := f32(y64)
-	slider := slider_dragged
-	return x >= slider.pos.x && x <= slider.pos.x + bar_width
 }
 
 cursor_within_button :: proc() -> ^Button {

@@ -22,7 +22,7 @@ Slider :: struct {
 
 bar_width: f32 = 100
 bar_height: f32 = 2
-handle_size: f32 = font_size
+handle_size :: font_size
 
 slider_init :: proc() {
 
