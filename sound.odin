@@ -76,25 +76,16 @@ play_sound :: proc() {
 	ma.device_uninit(&device)
 }
 
-envelope: [4]EnvelopeSegment
+envelope: []EnvelopeSegment = {{duration = 20}, {duration = 50}, {duration = 200}, {duration = 20}}
+
+envelope_sus_amp_ratio: f32 = 0.5
 
 update_envelope :: proc() {
-	envelope[0] = { 	// attack
-		duration   = 20,
-		amp_target = amplitude,
-	}
-	envelope[1] = { 	// decay
-		duration   = 50,
-		amp_target = envelope[0].amp_target * 3 / 4,
-	}
-	envelope[2] = { 	// sustain
-		duration   = 200,
-		amp_target = envelope[1].amp_target,
-	}
-	envelope[3] = { 	// release
-		duration   = 20,
-		amp_target = 0,
-	}
+	sustain_amplitude := amplitude * envelope_sus_amp_ratio
+	envelope[0].amp_target = amplitude
+	envelope[1].amp_target = sustain_amplitude
+	envelope[2].amp_target = sustain_amplitude
+	envelope[3].amp_target = 0
 }
 
 frame_amplitude: f32 = 0

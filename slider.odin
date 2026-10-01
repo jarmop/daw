@@ -14,9 +14,10 @@ slider_handle_vao: u32
 slider_handle_vertices: [6]Vertex
 
 Slider :: struct {
-	pos:   Vec2,
-	value: ^f32,
-	max:   f32,
+	pos:              Vec2,
+	value:            ^f32,
+	max:              f32,
+	on_value_changed: proc(),
 }
 
 bar_width: f32 = 100

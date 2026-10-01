@@ -13,41 +13,32 @@ Vertex :: struct {
 
 padding :: 4
 
-sliders: [6]Slider
+sliders: []Slider
+col_1_width: f32 = 145
+sliders_x: f32 = padding + col_1_width + padding
 
 ui_run :: proc() {
 	window_init()
 	waveform_init()
 
 	slider_init()
-	sliders_x: f32 = 110
 	sliders = {
-		{pos = {sliders_x, line_height / 2}, value = &frequency, max = max_frequency},
-		{
-			pos = {sliders_x, line_height + line_height / 2},
-			value = &amplitude,
-			max = max_amplitude,
-		},
-		{
-			pos = {sliders_x, 2 * line_height + line_height / 2},
-			value = &envelope[0].duration,
-			max = envelope_max_duration,
-		},
-		{
-			pos = {sliders_x, 3 * line_height + line_height / 2},
-			value = &envelope[1].duration,
-			max = envelope_max_duration,
-		},
-		{
-			pos = {sliders_x, 4 * line_height + line_height / 2},
-			value = &envelope[2].duration,
-			max = envelope_max_duration,
-		},
-		{
-			pos = {sliders_x, 5 * line_height + line_height / 2},
-			value = &envelope[3].duration,
-			max = envelope_max_duration,
-		},
+		{value = &frequency, max = max_frequency},
+		{value = &amplitude, max = max_amplitude, on_value_changed = update_envelope},
+		{value = &envelope[0].duration, max = envelope_max_duration},
+		{value = &envelope[1].duration, max = envelope_max_duration},
+		{value = &envelope[2].duration, max = envelope_max_duration},
+		{value = &envelope[3].duration, max = envelope_max_duration},
+		{value = &envelope_sus_amp_ratio, max = 1, on_value_changed = update_envelope},
+	}
+
+	slider_height: f32 = line_height / 2
+	for &s, i in sliders {
+		s.pos = {sliders_x, slider_height}
+		if s.on_value_changed == nil {
+			s.on_value_changed = proc() {}
+		}
+		slider_height += line_height
 	}
 
 	button_init()
@@ -88,7 +79,7 @@ ui_run :: proc() {
 ui_update :: proc() {
 	clear(&text_vertices)
 
-	width :: 120
+	width := col_1_width
 	x :: padding
 	y: f32
 
@@ -109,6 +100,13 @@ ui_update :: proc() {
 
 	y += line_height
 	text_add_vertices(fmt.tprintf("Release: %.2f", envelope[3].duration), {x, y}, width)
+
+	y += line_height
+	text_add_vertices(
+		fmt.tprintf("Sustain amplitude: %.2f", envelope_sus_amp_ratio),
+		{x, y},
+		width,
+	)
 
 	y += line_height
 	waveform_text_width, _ := text_add_vertices(
@@ -134,7 +132,7 @@ ui_update :: proc() {
 
 	text_set_buffer_data()
 
-	y += envelope_size.y
+	y += 10 + envelope_size.y
 	envelope_pos = {x, y}
 	envelope_vertices_update()
 }
