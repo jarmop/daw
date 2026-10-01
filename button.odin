@@ -44,7 +44,7 @@ button_draw :: proc() {
 	shader_set_vec2(ui_program, "screen_size", {f32(WINDOW_WIDTH), f32(WINDOW_HEIGHT)})
 
 	for button in buttons {
-		shader_set_vec2(ui_program, "model", button.pos)
+		shader_set_vec2(ui_program, "mesh_pos", button.pos)
 		shader_set_vec4(ui_program, "color", {1.0, 1.0, 1.0, 1})
 		gl.BindVertexArray(button_vao)
 
