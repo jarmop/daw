@@ -57,6 +57,8 @@ ui_run :: proc() {
 
 	text_init()
 
+	envelope_init()
+
 	gl.ClearColor(0.5, 0.5, 0.5, 1)
 
 	prev_playing := playing
@@ -77,26 +79,10 @@ ui_run :: proc() {
 		slider_draw()
 		button_draw()
 		text_draw()
+		envelope_draw()
 
 		glfw.SwapBuffers(window)
 	}
-}
-
-waveform_vertices_update :: proc() {
-	samples_count := 40
-	waveform_vertices = make([]Vertex, samples_count)
-	defer delete(waveform_vertices)
-
-	for i in 0 ..< samples_count {
-		phase := f32(i) / f32(samples_count - 1)
-		sample := waveform_function_map[selected_waveform](phase)
-
-		// Flip Y by using negative sample. Also divide Y by two so the total
-		// height of the waveform is equal to the length.
-		waveform_vertices[i].pos = Vec2{phase, -sample / 2} * waveform_size
-	}
-
-	vbo_update(&waveform_vbo, waveform_vertices[:])
 }
 
 ui_update :: proc() {
@@ -147,6 +133,10 @@ ui_update :: proc() {
 	text_add_vertices(play_button_text, play_button_text_pos, play_button_text_max_width)
 
 	text_set_buffer_data()
+
+	y += envelope_size.y
+	envelope_pos = {x, y}
+	envelope_vertices_update()
 }
 
 make_quad :: proc(w, h: f32, x: f32 = 0, y: f32 = 0) -> [6]Vertex {

@@ -13,18 +13,7 @@ waveform_init :: proc() {
 	gl.GenVertexArrays(1, &waveform_vao)
 	gl.BindVertexArray(waveform_vao)
 
-	gl.GenBuffers(1, &waveform_vbo)
-	gl.BindBuffer(gl.ARRAY_BUFFER, waveform_vbo)
-
-	gl.VertexAttribPointer(
-		0,
-		size_of(Vertex) / size_of(f32),
-		gl.FLOAT,
-		gl.FALSE,
-		size_of(Vertex),
-		0,
-	)
-	gl.EnableVertexAttribArray(0)
+	vbo_init(&waveform_vbo)
 }
 
 waveform_draw :: proc() {
@@ -36,4 +25,21 @@ waveform_draw :: proc() {
 
 	gl.BindVertexArray(waveform_vao)
 	gl.DrawArrays(gl.LINE_STRIP, 0, i32(len(waveform_vertices)))
+}
+
+waveform_vertices_update :: proc() {
+	samples_count := 40
+	waveform_vertices = make([]Vertex, samples_count)
+	defer delete(waveform_vertices)
+
+	for i in 0 ..< samples_count {
+		phase := f32(i) / f32(samples_count - 1)
+		sample := waveform_function_map[selected_waveform](phase)
+
+		// Flip Y by using negative sample. Also divide Y by two so the total
+		// height of the waveform is equal to the length.
+		waveform_vertices[i].pos = Vec2{phase, -sample / 2} * waveform_size
+	}
+
+	vbo_update(&waveform_vbo, waveform_vertices[:])
 }
