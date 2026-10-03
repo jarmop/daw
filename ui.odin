@@ -50,6 +50,8 @@ ui_run :: proc() {
 
 	envelope_init()
 
+	wav_init()
+
 	gl.ClearColor(0.5, 0.5, 0.5, 1)
 
 	prev_playing := playing

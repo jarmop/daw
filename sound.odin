@@ -110,7 +110,7 @@ data_callback :: proc "c" (device: ^ma.device, output: rawptr, input: rawptr, fr
 				continue
 			} else {
 				envelope_i += 1
-				segment_start()
+				segment, segment_timer, amp_increment_per_frame = segment_start(envelope_i)
 			}
 		}
 
@@ -148,16 +148,18 @@ toggle_playback :: proc() {
 	if playing {
 		envelope_i = 0
 		frame_amplitude = 0
-		segment_start()
+		segment, segment_timer, amp_increment_per_frame = segment_start(envelope_i)
 	}
 }
 
-segment_start :: proc() {
-	segment = envelope[envelope_i]
-	segment_timer = 0
+segment_start :: proc(envelope_i: int) -> (EnvelopeSegment, f32, f32) {
+	segment := envelope[envelope_i]
+	segment_timer: f32 = 0
 	amp_start: f32 = envelope_i == 0 ? 0 : envelope[envelope_i - 1].amp_target
 	amp_end := segment.amp_target
 	amp_d := amp_end - amp_start
 	amp_increment_per_ms := amp_d / segment.duration
-	amp_increment_per_frame = amp_increment_per_ms / 48
+	amp_increment_per_frame := amp_increment_per_ms / 48
+
+	return segment, segment_timer, amp_increment_per_frame
 }

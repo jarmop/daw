@@ -58,6 +58,8 @@ key_callback :: proc "c" (window: glfw.WindowHandle, key, scancode, action, mode
 		selected_waveform = waveform_key_map[key]
 	} else if key == glfw.KEY_SPACE {
 		toggle_playback()
+	} else if key == glfw.KEY_S {
+		wav_save()
 	}
 }
 
