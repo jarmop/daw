@@ -48,12 +48,15 @@ envelope_i := 0
 play_sound :: proc() {
 	update_envelope()
 
+	generated_samples = generate_samples()
+
 	config := ma.device_config_init(ma.device_type.playback)
 
 	config.playback.format = ma.format.f32
 	config.playback.channels = 1
 	config.sampleRate = u32(sample_rate)
-	config.dataCallback = data_callback
+	// config.dataCallback = data_callback
+	config.dataCallback = data_callback2
 
 	device: ma.device
 
@@ -124,6 +127,29 @@ data_callback :: proc "c" (device: ^ma.device, output: rawptr, input: rawptr, fr
 		frame_amplitude += amp_increment_per_frame
 
 		segment_timer += ms_per_frame
+	}
+}
+
+sample_i := 0
+generated_samples: []f32
+
+data_callback2 :: proc "c" (device: ^ma.device, output: rawptr, input: rawptr, frame_count: u32) {
+	context = runtime.default_context()
+
+	samples := cast([^]f32)output
+	for i in 0 ..< int(frame_count) {
+		if !playing {
+			samples[i] = 0
+			continue
+		}
+
+		samples[i] = generated_samples[sample_i]
+		sample_i += 1
+
+		if sample_i == len(generated_samples) {
+			sample_i = 0
+			playing = false
+		}
 	}
 }
 
