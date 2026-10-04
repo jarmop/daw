@@ -15,6 +15,27 @@ Waveform :: enum {
 	Sawtooth,
 }
 
+// Track :: struct {
+// 	// attack:            f32,
+// 	// decay:             f32,
+// 	// release:           f32,
+// 	// amplitude:         f32,
+// 	// sustain_amplitude: f32,
+// 	items: struct {
+// 		// sustain = duration - (a+d+r)
+// 		duration:  f32,
+// 		frequency: f32,
+// 	},
+// }
+
+TrackItem :: struct {
+	frequency: f32,
+	start:     f32,
+	duration:  f32,
+}
+
+track_items: []TrackItem
+
 WaveformFunc :: proc "c" (phase: f32) -> f32
 
 waveform_function_map := map[Waveform]WaveformFunc {
@@ -28,6 +49,7 @@ selected_waveform: Waveform = .Sine
 
 sample_rate :: 48000
 ms_per_frame :: 1000.0 / sample_rate
+frames_per_ms :: sample_rate / 1000.0
 
 // frequency: f32 = 440
 frequency: f32 = 261.63
@@ -58,6 +80,14 @@ play_sound :: proc() {
 	frequency = midi_to_freq(midi)
 
 	update_envelope()
+
+	track_items = {
+		{frequency = midi_to_freq(60), start = 100, duration = 300},
+		{frequency = midi_to_freq(60), start = 600, duration = 300},
+	}
+
+	track_samples := generate_track_samples()
+	// fmt.println(len(track_samples))
 
 	config := ma.device_config_init(ma.device_type.playback)
 
@@ -127,7 +157,10 @@ data_callback_realtime :: proc "c" (
 				continue
 			} else {
 				envelope_i += 1
-				segment, segment_timer, amp_increment_per_frame = segment_start(envelope_i)
+				segment, segment_timer, amp_increment_per_frame = segment_start(
+					envelope,
+					envelope_i,
+				)
 			}
 		}
 
@@ -191,14 +224,22 @@ get_sawtooth_sample :: proc "c" (phase: f32) -> f32 {
 toggle_playback :: proc() {
 	playing = !playing
 	if playing {
-		generated_samples = generate_samples()
+		// generated_samples = generate_samples()
+		generated_samples = generate_track_samples()
 		envelope_i = 0
 		frame_amplitude = 0
-		segment, segment_timer, amp_increment_per_frame = segment_start(envelope_i)
+		segment, segment_timer, amp_increment_per_frame = segment_start(envelope, envelope_i)
 	}
 }
 
-segment_start :: proc(envelope_i: int) -> (EnvelopeSegment, f32, f32) {
+segment_start :: proc(
+	envelope: []EnvelopeSegment,
+	envelope_i: int,
+) -> (
+	EnvelopeSegment,
+	f32,
+	f32,
+) {
 	segment := envelope[envelope_i]
 	segment_timer: f32 = 0
 	amp_start: f32 = envelope_i == 0 ? 0 : envelope[envelope_i - 1].amp_target
@@ -221,4 +262,101 @@ midi_to_text :: proc(midi: int) {
 	octave := midi / 12 - 1
 	scale_i := midi % 12
 	fmt.println(music_keys[scale_i], octave)
+}
+
+generate_track_samples :: proc() -> []f32 {
+	last_item := track_items[len(track_items) - 1]
+	track_duration := last_item.start + last_item.duration
+	samples_count := int(frames_per_ms * track_duration)
+
+	samples := make([]f32, samples_count)
+
+	attack := envelope[0].duration
+	decay := envelope[1].duration
+	release := envelope[2].duration
+	sustain_amplitude := amplitude * envelope_sus_amp_ratio
+
+	// fmt.println(samples_count)
+
+	sample_i := 0
+	track_timer: f32 = 0
+	for item in track_items {
+		// fmt.println("------------------")
+		// fmt.println(sample_i)
+		gap := item.start - track_timer
+		// fmt.println(gap)
+		for i in 0 ..< gap * frames_per_ms {
+			samples[sample_i] = 0
+			sample_i += 1
+		}
+		track_timer += gap
+
+		item_envelope: []EnvelopeSegment = {
+			{duration = attack, amp_target = amplitude},
+			{duration = decay, amp_target = sustain_amplitude},
+			{
+				duration = item.duration - (attack + decay + release),
+				amp_target = sustain_amplitude,
+			},
+			{duration = release, amp_target = 0},
+		}
+
+		add_envelope_samples(item_envelope, item.frequency, samples, &sample_i)
+
+		track_timer += item.duration
+
+	}
+
+	return samples
+}
+
+add_envelope_samples :: proc(
+	envelope: []EnvelopeSegment,
+	frequency: f32,
+	samples: []f32,
+	sample_i: ^int,
+) {
+	// fmt.println("generate_envelope_samples")
+	// fmt.println("sample_i", sample_i^)
+	total_duration: f32 = 0
+	for e in envelope {
+		total_duration += e.duration
+	}
+
+	samples_count := int(frames_per_ms * total_duration)
+	phase: f32 = 0
+	frame_amplitude: f32 = 0
+
+	// fmt.println("samples_count", samples_count)
+
+	envelope_i = 0
+	segment, segment_timer, amp_increment_per_frame := segment_start(envelope, envelope_i)
+
+	for i in 0 ..< samples_count {
+		if segment_timer >= segment.duration {
+			if envelope_i == len(envelope) - 1 {
+				samples[sample_i^] = 0
+				sample_i^ += 1
+				continue
+			} else {
+				envelope_i += 1
+				segment, segment_timer, amp_increment_per_frame = segment_start(
+					envelope,
+					envelope_i,
+				)
+			}
+		}
+
+		samples[sample_i^] = waveform_function_map[selected_waveform](phase) * frame_amplitude
+		sample_i^ += 1
+
+		phase += frequency / sample_rate
+		if phase >= 1 {
+			phase -= 1
+		}
+
+		frame_amplitude += amp_increment_per_frame
+
+		segment_timer += ms_per_frame
+	}
 }

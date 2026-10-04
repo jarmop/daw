@@ -41,13 +41,13 @@ generate_samples :: proc() -> []f32 {
 		total_duration += e.duration
 	}
 
-	samples_count := int(sample_rate / 1000 * total_duration)
+	samples_count := int(frames_per_ms * total_duration)
 	samples := make([]f32, samples_count)
 	phase: f32 = 0
 	frame_amplitude: f32 = 0
 
 	envelope_i = 0
-	segment, segment_timer, amp_increment_per_frame := segment_start(envelope_i)
+	segment, segment_timer, amp_increment_per_frame := segment_start(envelope, envelope_i)
 
 	for i in 0 ..< samples_count {
 		if segment_timer >= segment.duration {
@@ -56,7 +56,10 @@ generate_samples :: proc() -> []f32 {
 				continue
 			} else {
 				envelope_i += 1
-				segment, segment_timer, amp_increment_per_frame = segment_start(envelope_i)
+				segment, segment_timer, amp_increment_per_frame = segment_start(
+					envelope,
+					envelope_i,
+				)
 			}
 		}
 
