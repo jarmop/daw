@@ -48,12 +48,8 @@ generate_samples :: proc() -> []f32 {
 
 	envelope_i = 0
 	segment, segment_timer, amp_increment_per_frame := segment_start(envelope_i)
-	// segment := envelope[envelope_i]
-	// segment_timer: f32 = 0
 
 	for i in 0 ..< samples_count {
-		samples[i] = waveform_function_map[selected_waveform](phase) * frame_amplitude
-
 		if segment_timer >= segment.duration {
 			if envelope_i == len(envelope) - 1 {
 				samples[i] = 0
@@ -64,6 +60,8 @@ generate_samples :: proc() -> []f32 {
 			}
 		}
 
+		samples[i] = waveform_function_map[selected_waveform](phase) * frame_amplitude
+
 		phase += frequency / sample_rate
 		if phase >= 1 {
 			phase -= 1
@@ -73,8 +71,6 @@ generate_samples :: proc() -> []f32 {
 
 		segment_timer += ms_per_frame
 	}
-
-	// fmt.println(total_duration, samples_count)
 
 	return samples
 }

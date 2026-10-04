@@ -48,15 +48,13 @@ envelope_i := 0
 play_sound :: proc() {
 	update_envelope()
 
-	generated_samples = generate_samples()
-
 	config := ma.device_config_init(ma.device_type.playback)
 
 	config.playback.format = ma.format.f32
 	config.playback.channels = 1
 	config.sampleRate = u32(sample_rate)
-	// config.dataCallback = data_callback
-	config.dataCallback = data_callback2
+	// config.dataCallback = data_callback_realtime
+	config.dataCallback = data_callback_buffered
 
 	device: ma.device
 
@@ -96,7 +94,12 @@ segment: EnvelopeSegment
 segment_timer: f32 = 0
 amp_increment_per_frame: f32
 
-data_callback :: proc "c" (device: ^ma.device, output: rawptr, input: rawptr, frame_count: u32) {
+data_callback_realtime :: proc "c" (
+	device: ^ma.device,
+	output: rawptr,
+	input: rawptr,
+	frame_count: u32,
+) {
 	context = runtime.default_context()
 
 	samples := cast([^]f32)output
@@ -133,7 +136,12 @@ data_callback :: proc "c" (device: ^ma.device, output: rawptr, input: rawptr, fr
 sample_i := 0
 generated_samples: []f32
 
-data_callback2 :: proc "c" (device: ^ma.device, output: rawptr, input: rawptr, frame_count: u32) {
+data_callback_buffered :: proc "c" (
+	device: ^ma.device,
+	output: rawptr,
+	input: rawptr,
+	frame_count: u32,
+) {
 	context = runtime.default_context()
 
 	samples := cast([^]f32)output
@@ -172,6 +180,7 @@ get_sawtooth_sample :: proc "c" (phase: f32) -> f32 {
 toggle_playback :: proc() {
 	playing = !playing
 	if playing {
+		generated_samples = generate_samples()
 		envelope_i = 0
 		frame_amplitude = 0
 		segment, segment_timer, amp_increment_per_frame = segment_start(envelope_i)
