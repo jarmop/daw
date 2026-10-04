@@ -45,17 +45,35 @@ window_init :: proc() {
 	glfw.SetCursorPosCallback(window, cursor_pos_callback)
 }
 
-key_callback :: proc "c" (window: glfw.WindowHandle, key, scancode, action, mode: i32) {
+key_callback :: proc "c" (window: glfw.WindowHandle, key, scancode_i32, action, mode: i32) {
 	context = runtime.default_context()
 
 	if action != glfw.PRESS {
 		return
 	}
 
-	if key == glfw.KEY_ESCAPE {
-		glfw.SetWindowShouldClose(window, true)
+	scancode := int(scancode_i32)
+
+	music_key := 0 // C = 0, C# = 1, B = 11
+	octave := 4 // -1 - 9
+	midi := (octave + 1) * 12 + music_key
+
+	music_key_scancode_start := 16 // "Q"
+	music_key_scancode_end := music_key_scancode_start + 11 // The key after "Å"
+
+	if scancode >= music_key_scancode_start && scancode <= music_key_scancode_end {
+		// scale_i := key - glfw.KEY_1
+		scale_i := scancode - music_key_scancode_start
+		// fmt.println(scancode, key, scale_i)
+		midi := (octave + 1) * 12 + scale_i
+		frequency = midi_to_freq(midi)
+		toggle_playback()
+		// fmt.println(midi)
+		midi_to_text(midi)
 	} else if key in waveform_key_map {
 		selected_waveform = waveform_key_map[key]
+	} else if key == glfw.KEY_ESCAPE {
+		glfw.SetWindowShouldClose(window, true)
 	} else if key == glfw.KEY_SPACE {
 		toggle_playback()
 	} else if key == glfw.KEY_S {

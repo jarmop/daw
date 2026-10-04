@@ -29,8 +29,9 @@ selected_waveform: Waveform = .Sine
 sample_rate :: 48000
 ms_per_frame :: 1000.0 / sample_rate
 
-frequency: f32 = 440
-max_frequency: f32 = 440
+// frequency: f32 = 440
+frequency: f32 = 261.63
+max_frequency: f32 = 1000
 amplitude: f32 = 0.2
 max_amplitude: f32 = 1.0
 phase: f32 = 0
@@ -46,6 +47,16 @@ envelope_max_duration: f32 = 400
 envelope_i := 0
 
 play_sound :: proc() {
+	// note := "C"
+	// octave := 4
+	// midi := 0 // C-1
+	// midi := 24 // C1
+	midi := 60 // C4
+	// midi := 60 // C8
+	// midi := 127 // G9
+
+	frequency = midi_to_freq(midi)
+
 	update_envelope()
 
 	config := ma.device_config_init(ma.device_type.playback)
@@ -197,4 +208,17 @@ segment_start :: proc(envelope_i: int) -> (EnvelopeSegment, f32, f32) {
 	amp_increment_per_frame := amp_increment_per_ms / 48
 
 	return segment, segment_timer, amp_increment_per_frame
+}
+
+midi_to_freq :: proc(midi: int) -> f32 {
+	a4: f32 = 440
+	return a4 * math.pow_f32(2, (f32(midi) - 69) / 12)
+}
+
+music_keys: []string = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"}
+
+midi_to_text :: proc(midi: int) {
+	octave := midi / 12 - 1
+	scale_i := midi % 12
+	fmt.println(music_keys[scale_i], octave)
 }

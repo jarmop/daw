@@ -15,6 +15,8 @@ padding :: 4
 
 sliders: []Slider
 col_1_width: f32 = 145
+col_2_width: f32 = 145
+col_3_width: f32 = 145
 sliders_x: f32 = padding + col_1_width + 10
 
 ui_run :: proc() {
@@ -84,7 +86,14 @@ ui_update :: proc() {
 	y: f32
 
 	y = font_size
-	text_add_vertices(fmt.tprintf("Frequency: %d", int(frequency)), {x, y}, width)
+	text_add_vertices(fmt.tprintf("Frequency: %.2f", frequency), {x, y}, width)
+
+	// text_add_vertices(
+	// 	fmt.tprintf("Note: %f", midi_to_freq(midi)),
+	// 	// fmt.tprintf("Note: %s%d", note, octave),
+	// 	{x + col_1_width + col_2_width, y},
+	// 	col_3_width,
+	// )
 
 	y += line_height
 	text_add_vertices(fmt.tprintf("Amplitude: %.2f", amplitude), {x, y}, width)
