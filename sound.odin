@@ -182,7 +182,8 @@ data_callback_realtime :: proc "c" (
 }
 
 sample_i := 0
-generated_samples: []f32
+// generated_samples: []f32
+sample_tracks: [3][]f32
 
 data_callback_buffered :: proc "c" (
 	device: ^ma.device,
@@ -199,12 +200,16 @@ data_callback_buffered :: proc "c" (
 			continue
 		}
 
-		samples[i] = generated_samples[sample_i]
+		// samples[i] = generated_samples[sample_i]
+		for s in sample_tracks {
+			samples[i] += s[sample_i]
+		}
+		samples[i] /= len(sample_tracks)
 		sample_i += 1
 
-		if sample_i == len(generated_samples) {
+		if sample_i == len(sample_tracks[0]) {
 			sample_i = 0
-			playing = false
+			toggle_playback()
 		}
 	}
 }
@@ -229,10 +234,17 @@ toggle_playback :: proc() {
 	playing = !playing
 	if playing {
 		// generated_samples = generate_envelope_samples(envelope, frequency)
-		generated_samples = generate_track_samples(track1_items)
+		// generated_samples = generate_track_samples(track1_items)
+		for track_items, i in tracks {
+			sample_tracks[i] = generate_track_samples(track_items)
+		}
 		envelope_i = 0
 		frame_amplitude = 0
 		segment, segment_timer, amp_increment_per_frame = segment_start(envelope, envelope_i)
+	} else {
+		for track_items, i in tracks {
+			delete(sample_tracks[i])
+		}
 	}
 }
 

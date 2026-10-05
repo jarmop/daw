@@ -58,15 +58,10 @@ ui_run :: proc() {
 
 	// gl.Enable(gl.DEPTH_TEST)
 
-	prev_playing := playing
 	for !glfw.WindowShouldClose(window) {
 		defer free_all(context.temp_allocator)
 
 		glfw.PollEvents()
-
-		if prev_playing != playing {
-			prev_playing = playing
-		}
 
 		gl.Clear(gl.COLOR_BUFFER_BIT)
 		// gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
