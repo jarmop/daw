@@ -94,13 +94,6 @@ ui_update :: proc() {
 	y = font_size
 	text_add_vertices(fmt.tprintf("Frequency: %.2f", frequency), {x, y}, width)
 
-	// text_add_vertices(
-	// 	fmt.tprintf("Note: %f", midi_to_freq(midi)),
-	// 	// fmt.tprintf("Note: %s%d", note, octave),
-	// 	{x + col_1_width + col_2_width, y},
-	// 	col_3_width,
-	// )
-
 	y += line_height
 	text_add_vertices(fmt.tprintf("Amplitude: %.2f", amplitude), {x, y}, width)
 
@@ -124,12 +117,7 @@ ui_update :: proc() {
 	)
 
 	y += line_height
-	waveform_text_width, _ := text_add_vertices(
-		"Waveform: ",
-		// fmt.tprintf("Waveform: %s", selected_waveform),
-		{x, y},
-		width,
-	)
+	waveform_text_width, _ := text_add_vertices("Waveform: ", {x, y}, width)
 	wave_form_pos = {x + waveform_text_width, y - waveform_size.y / 2}
 	waveform_vertices_update()
 
@@ -149,8 +137,8 @@ ui_update :: proc() {
 	envelope_pos = {x, y}
 	envelope_vertices_update()
 
-	y += 10 + track_size.y
-	track_pos = {x, y}
+	y += 10 + tracks_size.y
+	tracks_pos = {x, y}
 	track_vertices_update()
 
 	text_set_buffer_data()

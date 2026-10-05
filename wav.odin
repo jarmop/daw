@@ -10,7 +10,7 @@ wav_save :: proc() {
 
 	frames_written: u64
 	// frames := generate_envelope_samples(envelope, frequency)
-	frames := generate_track_samples(track_items)
+	frames := generate_track_samples(track1_items)
 	result := ma.encoder_write_pcm_frames(
 		&encoder,
 		raw_data(frames),

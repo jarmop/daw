@@ -35,7 +35,10 @@ TrackItem :: struct {
 	duration:  f32,
 }
 
-track_items: []TrackItem
+track1_items: []TrackItem
+track2_items: []TrackItem
+track3_items: []TrackItem
+tracks: [][]TrackItem
 
 WaveformFunc :: proc "c" (phase: f32) -> f32
 
@@ -82,10 +85,13 @@ play_sound :: proc() {
 
 	update_envelope()
 
-	track_items = {
+	track1_items = {
 		{midi = 60, frequency = midi_to_freq(60), start = 100, duration = 300},
-		{midi = 64, frequency = midi_to_freq(64), start = 600, duration = 300},
+		{midi = 60, frequency = midi_to_freq(60), start = 600, duration = 300},
 	}
+	track2_items = {{midi = 64, frequency = midi_to_freq(64), start = 600, duration = 300}}
+	track3_items = {{midi = 67, frequency = midi_to_freq(67), start = 600, duration = 300}}
+	tracks = {track1_items, track2_items, track3_items}
 
 	config := ma.device_config_init(ma.device_type.playback)
 
@@ -223,7 +229,7 @@ toggle_playback :: proc() {
 	playing = !playing
 	if playing {
 		// generated_samples = generate_envelope_samples(envelope, frequency)
-		generated_samples = generate_track_samples(track_items)
+		generated_samples = generate_track_samples(track1_items)
 		envelope_i = 0
 		frame_amplitude = 0
 		segment, segment_timer, amp_increment_per_frame = segment_start(envelope, envelope_i)
