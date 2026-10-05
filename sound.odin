@@ -86,9 +86,6 @@ play_sound :: proc() {
 		{frequency = midi_to_freq(60), start = 600, duration = 300},
 	}
 
-	track_samples := generate_track_samples()
-	// fmt.println(len(track_samples))
-
 	config := ma.device_config_init(ma.device_type.playback)
 
 	config.playback.format = ma.format.f32
@@ -224,8 +221,8 @@ get_sawtooth_sample :: proc "c" (phase: f32) -> f32 {
 toggle_playback :: proc() {
 	playing = !playing
 	if playing {
-		// generated_samples = generate_samples()
-		generated_samples = generate_track_samples()
+		generated_samples = generate_envelope_samples(envelope, frequency)
+		// generated_samples = generate_track_samples(track_items)
 		envelope_i = 0
 		frame_amplitude = 0
 		segment, segment_timer, amp_increment_per_frame = segment_start(envelope, envelope_i)
@@ -264,7 +261,7 @@ midi_to_text :: proc(midi: int) {
 	fmt.println(music_keys[scale_i], octave)
 }
 
-generate_track_samples :: proc() -> []f32 {
+generate_track_samples :: proc(track_items: []TrackItem) -> []f32 {
 	last_item := track_items[len(track_items) - 1]
 	track_duration := last_item.start + last_item.duration
 	samples_count := int(frames_per_ms * track_duration)
@@ -276,15 +273,10 @@ generate_track_samples :: proc() -> []f32 {
 	release := envelope[2].duration
 	sustain_amplitude := amplitude * envelope_sus_amp_ratio
 
-	// fmt.println(samples_count)
-
 	sample_i := 0
 	track_timer: f32 = 0
 	for item in track_items {
-		// fmt.println("------------------")
-		// fmt.println(sample_i)
 		gap := item.start - track_timer
-		// fmt.println(gap)
 		for i in 0 ..< gap * frames_per_ms {
 			samples[sample_i] = 0
 			sample_i += 1
@@ -304,9 +296,16 @@ generate_track_samples :: proc() -> []f32 {
 		add_envelope_samples(item_envelope, item.frequency, samples, &sample_i)
 
 		track_timer += item.duration
-
 	}
 
+	return samples
+}
+
+generate_envelope_samples :: proc(envelope: []EnvelopeSegment, frequency: f32) -> []f32 {
+	samples_count := get_envelope_samples_count(envelope)
+	samples := make([]f32, samples_count)
+	sample_i := 0
+	add_envelope_samples(envelope, frequency, samples, &sample_i)
 	return samples
 }
 
@@ -316,19 +315,9 @@ add_envelope_samples :: proc(
 	samples: []f32,
 	sample_i: ^int,
 ) {
-	// fmt.println("generate_envelope_samples")
-	// fmt.println("sample_i", sample_i^)
-	total_duration: f32 = 0
-	for e in envelope {
-		total_duration += e.duration
-	}
-
-	samples_count := int(frames_per_ms * total_duration)
+	samples_count := get_envelope_samples_count(envelope)
 	phase: f32 = 0
 	frame_amplitude: f32 = 0
-
-	// fmt.println("samples_count", samples_count)
-
 	envelope_i = 0
 	segment, segment_timer, amp_increment_per_frame := segment_start(envelope, envelope_i)
 
@@ -359,4 +348,12 @@ add_envelope_samples :: proc(
 
 		segment_timer += ms_per_frame
 	}
+}
+
+get_envelope_samples_count :: proc(envelope: []EnvelopeSegment) -> int {
+	total_duration: f32 = 0
+	for e in envelope {
+		total_duration += e.duration
+	}
+	return int(frames_per_ms * total_duration)
 }
