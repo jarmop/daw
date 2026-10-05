@@ -52,7 +52,11 @@ ui_run :: proc() {
 
 	envelope_init()
 
+	track_init()
+
 	gl.ClearColor(0.5, 0.5, 0.5, 1)
+
+	// gl.Enable(gl.DEPTH_TEST)
 
 	prev_playing := playing
 	for !glfw.WindowShouldClose(window) {
@@ -65,14 +69,16 @@ ui_run :: proc() {
 		}
 
 		gl.Clear(gl.COLOR_BUFFER_BIT)
+		// gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
 		ui_update()
 
 		waveform_draw()
 		slider_draw()
 		button_draw()
-		text_draw()
 		envelope_draw()
+		track_draw()
+		text_draw()
 
 		glfw.SwapBuffers(window)
 	}
@@ -139,11 +145,15 @@ ui_update :: proc() {
 		play_button.pos + {play_button_text_x_offset, button_padding + font_size}
 	text_add_vertices(play_button_text, play_button_text_pos, play_button_text_max_width)
 
-	text_set_buffer_data()
-
 	y += 10 + envelope_size.y
 	envelope_pos = {x, y}
 	envelope_vertices_update()
+
+	y += 10 + track_size.y
+	track_pos = {x, y}
+	track_vertices_update()
+
+	text_set_buffer_data()
 }
 
 make_quad :: proc(w, h: f32, x: f32 = 0, y: f32 = 0) -> [6]Vertex {

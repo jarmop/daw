@@ -69,7 +69,7 @@ key_callback :: proc "c" (window: glfw.WindowHandle, key, scancode_i32, action, 
 		frequency = midi_to_freq(midi)
 		toggle_playback()
 		// fmt.println(midi)
-		midi_to_text(midi)
+		fmt.println(midi_to_text(midi))
 	} else if key in waveform_key_map {
 		selected_waveform = waveform_key_map[key]
 	} else if key == glfw.KEY_ESCAPE {

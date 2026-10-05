@@ -29,6 +29,7 @@ Waveform :: enum {
 // }
 
 TrackItem :: struct {
+	midi:      int,
 	frequency: f32,
 	start:     f32,
 	duration:  f32,
@@ -54,7 +55,7 @@ frames_per_ms :: sample_rate / 1000.0
 // frequency: f32 = 440
 frequency: f32 = 261.63
 max_frequency: f32 = 1000
-amplitude: f32 = 0.2
+amplitude: f32 = 0.4
 max_amplitude: f32 = 1.0
 phase: f32 = 0
 playing := false
@@ -82,8 +83,8 @@ play_sound :: proc() {
 	update_envelope()
 
 	track_items = {
-		{frequency = midi_to_freq(60), start = 100, duration = 300},
-		{frequency = midi_to_freq(60), start = 600, duration = 300},
+		{midi = 60, frequency = midi_to_freq(60), start = 100, duration = 300},
+		{midi = 64, frequency = midi_to_freq(64), start = 600, duration = 300},
 	}
 
 	config := ma.device_config_init(ma.device_type.playback)
@@ -221,8 +222,8 @@ get_sawtooth_sample :: proc "c" (phase: f32) -> f32 {
 toggle_playback :: proc() {
 	playing = !playing
 	if playing {
-		generated_samples = generate_envelope_samples(envelope, frequency)
-		// generated_samples = generate_track_samples(track_items)
+		// generated_samples = generate_envelope_samples(envelope, frequency)
+		generated_samples = generate_track_samples(track_items)
 		envelope_i = 0
 		frame_amplitude = 0
 		segment, segment_timer, amp_increment_per_frame = segment_start(envelope, envelope_i)
@@ -255,17 +256,14 @@ midi_to_freq :: proc(midi: int) -> f32 {
 
 music_keys: []string = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"}
 
-midi_to_text :: proc(midi: int) {
+midi_to_text :: proc(midi: int) -> string {
 	octave := midi / 12 - 1
 	scale_i := midi % 12
-	fmt.println(music_keys[scale_i], octave)
+	return fmt.tprintf("%s%d", music_keys[scale_i], octave)
 }
 
 generate_track_samples :: proc(track_items: []TrackItem) -> []f32 {
-	last_item := track_items[len(track_items) - 1]
-	track_duration := last_item.start + last_item.duration
-	samples_count := int(frames_per_ms * track_duration)
-
+	samples_count := int(frames_per_ms * get_track_duration(track_items))
 	samples := make([]f32, samples_count)
 
 	attack := envelope[0].duration
