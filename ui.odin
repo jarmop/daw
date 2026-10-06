@@ -5,12 +5,6 @@ import "core:math"
 import gl "vendor:OpenGL"
 import glfw "vendor:glfw"
 
-Vec2 :: [2]f32
-
-Vertex :: struct {
-	pos: Vec2,
-}
-
 padding :: 4
 
 sliders: []Slider
@@ -21,6 +15,8 @@ sliders_x: f32 = padding + col_1_width + 10
 
 ui_run :: proc() {
 	window_init()
+	shader_init()
+
 	waveform_init()
 
 	slider_init()
@@ -43,10 +39,10 @@ ui_run :: proc() {
 		slider_height += line_height
 	}
 
-	button_init()
-	buttons = {
-		{pos = {WINDOW_WIDTH - button_width - padding, padding}, on_click = toggle_playback},
-	}
+	// button_init()
+	// buttons = {
+	// 	{pos = {WINDOW_WIDTH - button_width - padding, padding}, on_click = toggle_playback},
+	// }
 
 	text_init()
 
@@ -70,7 +66,7 @@ ui_run :: proc() {
 
 		waveform_draw()
 		slider_draw()
-		button_draw()
+		// button_draw()
 		envelope_draw()
 		track_draw()
 		text_draw()
@@ -116,23 +112,23 @@ ui_update :: proc() {
 	wave_form_pos = {x + waveform_text_width, y - waveform_size.y / 2}
 	waveform_vertices_update()
 
-	play_button_text := playing ? "Stop" : "Play"
-	play_button_text_max_width: f32 = button_width - 2 * button_padding_x
+	// play_button_text := playing ? "Stop" : "Play"
+	// play_button_text_max_width: f32 = button_width - 2 * button_padding_x
 
-	text_width, text_height := get_text_dimensions(play_button_text, play_button_text_max_width)
+	// text_width, text_height := get_text_dimensions(play_button_text, play_button_text_max_width)
 
-	button_padding :: padding
-	play_button := buttons[0]
-	play_button_text_x_offset := (button_width - text_width) / 2
-	play_button_text_pos :=
-		play_button.pos + {play_button_text_x_offset, button_padding + font_size}
-	text_add_vertices(play_button_text, play_button_text_pos, play_button_text_max_width)
+	// button_padding :: padding
+	// play_button := buttons[0]
+	// play_button_text_x_offset := (button_width - text_width) / 2
+	// play_button_text_pos :=
+	// 	play_button.pos + {play_button_text_x_offset, button_padding + font_size}
+	// text_add_vertices(play_button_text, play_button_text_pos, play_button_text_max_width)
 
 	y += 10 + envelope_size.y
 	envelope_pos = {x, y}
 	envelope_vertices_update()
 
-	y += 10 + tracks_size.y
+	y += 10
 	tracks_pos = {x, y}
 	track_vertices_update()
 
@@ -145,7 +141,6 @@ make_quad :: proc(w, h: f32, x: f32 = 0, y: f32 = 0) -> [6]Vertex {
 	top_left: Vec2 = {x, y + h}
 	top_right: Vec2 = {x + w, y + h}
 
-	// triangles
 	return {
 		{pos = bottom_left},
 		{pos = bottom_right},
@@ -156,38 +151,27 @@ make_quad :: proc(w, h: f32, x: f32 = 0, y: f32 = 0) -> [6]Vertex {
 	}
 }
 
+make_quad_color :: proc(w, h: f32, x: f32 = 0, y: f32 = 0, color: Vec4) -> [6]ColorVertex {
+	bottom_left: Vec2 = {x, y}
+	bottom_right: Vec2 = {x + w, y}
+	top_left: Vec2 = {x, y + h}
+	top_right: Vec2 = {x + w, y + h}
+
+	return {
+		{pos = bottom_left, color = color},
+		{pos = bottom_right, color = color},
+		{pos = top_left, color = color},
+		{pos = top_left, color = color},
+		{pos = top_right, color = color},
+		{pos = bottom_right, color = color},
+	}
+}
+
 make_quad_outline :: proc(w, h: f32, x: f32 = 0, y: f32 = 0) -> [4]Vertex {
 	bottom_left: Vec2 = {x, y}
 	bottom_right: Vec2 = {x + w, y}
 	top_left: Vec2 = {x, y + h}
 	top_right: Vec2 = {x + w, y + h}
 
-	// outline
 	return {{pos = bottom_left}, {pos = bottom_right}, {pos = top_right}, {pos = top_left}}
-}
-
-
-vbo_init :: proc(vbo: ^u32) {
-	gl.GenBuffers(1, vbo)
-	gl.BindBuffer(gl.ARRAY_BUFFER, vbo^)
-
-	gl.VertexAttribPointer(
-		0,
-		size_of(Vertex) / size_of(f32),
-		gl.FLOAT,
-		gl.FALSE,
-		size_of(Vertex),
-		0,
-	)
-	gl.EnableVertexAttribArray(0)
-}
-
-vbo_update :: proc(vbo: ^u32, vertices: []Vertex) {
-	gl.BindBuffer(gl.ARRAY_BUFFER, vbo^)
-	gl.BufferData(
-		gl.ARRAY_BUFFER,
-		len(vertices) * size_of(Vertex),
-		raw_data(vertices),
-		gl.STATIC_DRAW,
-	)
 }

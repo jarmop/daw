@@ -5,8 +5,6 @@ import "core:math/linalg/glsl"
 import "core:os"
 import gl "vendor:OpenGL"
 
-ui_program: u32
-
 slider_bar_vao: u32
 slider_bar_vertices: [6]Vertex
 
@@ -25,18 +23,6 @@ bar_height: f32 = 2
 handle_size :: font_size
 
 slider_init :: proc() {
-
-	// -----------------------------------------
-	// Load shaders
-	// -----------------------------------------
-
-	shaders_ok: bool
-	ui_program, shaders_ok = gl.load_shaders_file("./shaders/ui.vs", "./shaders/ui.fs")
-	if !shaders_ok {
-		fmt.println("Shaders not ok")
-		os.exit(-1)
-	}
-
 	// --------------
 	// Slider bar
 	// --------------

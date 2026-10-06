@@ -7,8 +7,8 @@ import "core:fmt"
 import gl "vendor:OpenGL"
 import glfw "vendor:glfw"
 
-WINDOW_WIDTH :: 800
-WINDOW_HEIGHT :: 600
+WINDOW_WIDTH: i32 = 800
+WINDOW_HEIGHT: i32 = 600
 
 window: glfw.WindowHandle
 
@@ -38,11 +38,17 @@ window_init :: proc() {
 	glfw.MakeContextCurrent(window)
 
 	gl.load_up_to(3, 3, glfw.gl_set_proc_address)
-	// gl.Viewport(0, 0, INITIAL_WINDOW_WIDTH, INITIAL_WINDOW_HEIGHT)
-
+	// gl.Viewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT)
+	glfw.SetFramebufferSizeCallback(window, framebuffer_size_callback)
 	glfw.SetKeyCallback(window, key_callback)
 	glfw.SetMouseButtonCallback(window, mouse_button_callback)
 	glfw.SetCursorPosCallback(window, cursor_pos_callback)
+}
+
+framebuffer_size_callback :: proc "c" (window: glfw.WindowHandle, width: i32, height: i32) {
+	gl.Viewport(0, 0, width, height)
+	WINDOW_WIDTH = width
+	WINDOW_HEIGHT = height
 }
 
 key_callback :: proc "c" (window: glfw.WindowHandle, key, scancode_i32, action, mode: i32) {
@@ -62,13 +68,10 @@ key_callback :: proc "c" (window: glfw.WindowHandle, key, scancode_i32, action, 
 	music_key_scancode_end := music_key_scancode_start + 11 // The key after "Å"
 
 	if scancode >= music_key_scancode_start && scancode <= music_key_scancode_end {
-		// scale_i := key - glfw.KEY_1
 		scale_i := scancode - music_key_scancode_start
-		// fmt.println(scancode, key, scale_i)
 		midi := (octave + 1) * 12 + scale_i
 		frequency = midi_to_freq(midi)
 		toggle_playback()
-		// fmt.println(midi)
 		fmt.println(midi_to_text(midi))
 	} else if key in waveform_key_map {
 		selected_waveform = waveform_key_map[key]
@@ -81,6 +84,9 @@ key_callback :: proc "c" (window: glfw.WindowHandle, key, scancode_i32, action, 
 	}
 }
 
+selected_track_i: int = -1
+selected_track_item_i: int = -1
+
 mouse_button_callback :: proc "c" (window: glfw.WindowHandle, button, action, mods: i32) {
 	context = runtime.default_context()
 
@@ -88,11 +94,14 @@ mouse_button_callback :: proc "c" (window: glfw.WindowHandle, button, action, mo
 		if action == glfw.PRESS {
 			left_mouse_pressed = true
 
+			x64, y64 := glfw.GetCursorPos(window)
+			x := f32(x64)
+			y := f32(y64)
+
+			selected_track_i = -1
+			selected_track_item_i = -1
+
 			if slider_hovered != nil {
-				// slider_dragged = slider_hovered
-				// slider_dragged.value^ = s.value^ + (f32(x_diff) / bar_width * s.max)
-				x64, y64 := glfw.GetCursorPos(window)
-				x := f32(x64)
 				s := slider_hovered
 				s.value^ = (x - s.pos.x) / bar_width * s.max
 				s.on_value_changed()
@@ -102,6 +111,28 @@ mouse_button_callback :: proc "c" (window: glfw.WindowHandle, button, action, mo
 				}
 			} else if button_hovered != nil {
 				button_hovered.on_click()
+			} else {
+				if x >= tracks_pos.x &&
+				   x <= tracks_pos.x + tracks_size.x &&
+				   y >= tracks_pos.y &&
+				   y <= tracks_pos.y + tracks_size.y {
+					track_pos := tracks_pos
+					for track, i in tracks {
+						if y >= track_pos.y && y <= track_pos.y + line_height {
+							selected_track_i = i
+							break
+						}
+						track_pos.y += line_height
+					}
+					for item, i in tracks[selected_track_i] {
+						note_x_start := item.start * track_px_per_ms
+						note_x_end := note_x_start + item.duration * track_px_per_ms
+						if x >= note_x_start && x <= note_x_end {
+							selected_track_item_i = i
+							break
+						}
+					}
+				}
 			}
 		} else {
 			left_mouse_pressed = false
@@ -146,7 +177,6 @@ cursor_pos_callback :: proc "c" (window: glfw.WindowHandle, xpos, ypos: f64) {
 		s.on_value_changed()
 
 	} else if !left_mouse_pressed {
-		// slider_hovered = cursor_within_slider_handle()
 		slider_hovered = cursor_within_slider_bar()
 		if slider_hovered != nil {
 			x64, y64 := glfw.GetCursorPos(window)

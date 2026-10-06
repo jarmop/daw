@@ -38,7 +38,7 @@ TrackItem :: struct {
 track1_items: []TrackItem
 track2_items: []TrackItem
 track3_items: []TrackItem
-tracks: [][]TrackItem
+tracks: [4][]TrackItem
 
 WaveformFunc :: proc "c" (phase: f32) -> f32
 
@@ -91,7 +91,9 @@ play_sound :: proc() {
 	}
 	track2_items = {{midi = 64, frequency = midi_to_freq(64), start = 600, duration = 300}}
 	track3_items = {{midi = 67, frequency = midi_to_freq(67), start = 600, duration = 300}}
-	tracks = {track1_items, track2_items, track3_items}
+	tracks[0] = track1_items
+	tracks[1] = track2_items
+	tracks[2] = track3_items
 
 	config := ma.device_config_init(ma.device_type.playback)
 
@@ -183,7 +185,7 @@ data_callback_realtime :: proc "c" (
 
 sample_i := 0
 // generated_samples: []f32
-sample_tracks: [3][]f32
+sample_tracks: [][]f32
 
 data_callback_buffered :: proc "c" (
 	device: ^ma.device,
@@ -204,7 +206,7 @@ data_callback_buffered :: proc "c" (
 		for s in sample_tracks {
 			samples[i] += s[sample_i]
 		}
-		samples[i] /= len(sample_tracks)
+		samples[i] /= f32(len(sample_tracks))
 		sample_i += 1
 
 		if sample_i == len(sample_tracks[0]) {
@@ -235,14 +237,27 @@ toggle_playback :: proc() {
 		// Stop playing before deleting the samples
 		playing = false
 
-		for track_items, i in tracks {
+		for _, i in sample_tracks {
 			delete(sample_tracks[i])
 		}
 	} else {
+
+		active_tracks_count := 0
+		for track_items in tracks {
+			active_tracks_count += len(track_items) > 0 ? 1 : 0
+		}
+
+		sample_tracks = make([][]f32, active_tracks_count)
+
 		// generated_samples = generate_envelope_samples(envelope, frequency)
 		// generated_samples = generate_track_samples(track1_items)
-		for track_items, i in tracks {
+		i := 0
+		for track_items in tracks {
+			if len(track_items) == 0 {
+				continue
+			}
 			sample_tracks[i] = generate_track_samples(track_items)
+			i += 1
 		}
 		envelope_i = 0
 		frame_amplitude = 0
