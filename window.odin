@@ -4,6 +4,7 @@ package daw
 
 import "base:runtime"
 import "core:fmt"
+import "core:math"
 import gl "vendor:OpenGL"
 import glfw "vendor:glfw"
 
@@ -153,38 +154,40 @@ mouse_button_callback :: proc "c" (window: glfw.WindowHandle, button, action, mo
 cursor_pos_callback :: proc "c" (window: glfw.WindowHandle, xpos, ypos: f64) {
 	context = runtime.default_context()
 
-	if left_mouse_pressed && slider_dragged != nil {
-		s := slider_dragged
+	if left_mouse_pressed {
 		x := f32(xpos)
 		if left_mouse_first_press {
 			x_prev = x
 			left_mouse_first_press = false
 		}
-
 		x_diff := x - x_prev
 		x_prev = x
+		if slider_dragged != nil {
+			s := slider_dragged
+			s_start := s.pos.x
+			s_end := s.pos.x + bar_width
+			if x < s_start {
+				if x_diff > 0 {
+					return
+				} else if s.value^ != 0 {
+					s.value^ = 0
+				}
+			} else if x > s_end {
+				if x_diff < 0 {
+					return
+				} else if s.value^ != s.max {
+					s.value^ = s.max
+				}
+			} else {
+				s.value^ = s.value^ + (f32(x_diff) / bar_width * s.max)
+			}
 
-		s_start := s.pos.x
-		s_end := s.pos.x + bar_width
-		if x < s_start {
-			if x_diff > 0 {
-				return
-			} else if s.value^ != 0 {
-				s.value^ = 0
-			}
-		} else if x > s_end {
-			if x_diff < 0 {
-				return
-			} else if s.value^ != s.max {
-				s.value^ = s.max
-			}
-		} else {
-			s.value^ = s.value^ + (f32(x_diff) / bar_width * s.max)
+			s.on_value_changed()
+		} else if selected_track_item_i > -1 {
+			selected_note := &tracks[selected_track_i][selected_track_item_i]
+			selected_note.start += math.round(x_diff / track_px_per_ms)
 		}
-
-		s.on_value_changed()
-
-	} else if !left_mouse_pressed {
+	} else {
 		slider_hovered = cursor_within_slider_bar()
 		if slider_hovered != nil {
 			x64, y64 := glfw.GetCursorPos(window)

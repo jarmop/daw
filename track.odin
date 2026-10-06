@@ -58,8 +58,10 @@ track_vertices_update :: proc() {
 	for track_items in tracks {
 		tracks_duration = max(get_track_duration(track_items), tracks_duration)
 	}
-	track_steps := int(tracks_duration / step_length_ms + 0.5)
-	tracks_size = {f32(track_steps) * step_length_px, f32(len(tracks)) * line_height}
+	// track_steps := int(tracks_duration / step_length_ms + 0.5)
+	// tracks_size = {f32(track_steps) * step_length_px, f32(len(tracks)) * line_height}
+	tracks_size = {f32(WINDOW_WIDTH) - 2 * padding, f32(len(tracks)) * line_height}
+	track_steps := int(tracks_size.x / step_length_px)
 	vertex_count_steps := 2 * (track_steps + 1)
 	vertex_count_stylus := 2
 	track_vertices = make([]Vertex, vertex_count_steps + vertex_count_stylus)
