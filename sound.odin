@@ -231,8 +231,14 @@ get_sawtooth_sample :: proc "c" (phase: f32) -> f32 {
 }
 
 toggle_playback :: proc() {
-	playing = !playing
 	if playing {
+		// Stop playing before deleting the samples
+		playing = false
+
+		for track_items, i in tracks {
+			delete(sample_tracks[i])
+		}
+	} else {
 		// generated_samples = generate_envelope_samples(envelope, frequency)
 		// generated_samples = generate_track_samples(track1_items)
 		for track_items, i in tracks {
@@ -241,10 +247,9 @@ toggle_playback :: proc() {
 		envelope_i = 0
 		frame_amplitude = 0
 		segment, segment_timer, amp_increment_per_frame = segment_start(envelope, envelope_i)
-	} else {
-		for track_items, i in tracks {
-			delete(sample_tracks[i])
-		}
+
+		// Start playing only after generating the samples
+		playing = true
 	}
 }
 
