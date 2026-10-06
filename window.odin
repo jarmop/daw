@@ -68,15 +68,20 @@ key_callback :: proc "c" (window: glfw.WindowHandle, key, scancode_i32, action, 
 	music_key_scancode_end := music_key_scancode_start + 11 // The key after "Å"
 
 	note_selected := selected_track_i > -1 && selected_track_item_i > -1
-	if note_selected &&
-	   scancode >= music_key_scancode_start &&
-	   scancode <= music_key_scancode_end {
-		scale_i := scancode - music_key_scancode_start
-		midi := (octave + 1) * 12 + scale_i
+	if note_selected {
 		selected_note := &tracks[selected_track_i][selected_track_item_i]
-		selected_note.midi = midi
-		selected_note.frequency = midi_to_freq(midi)
-	} else if key in waveform_key_map {
+		if scancode >= music_key_scancode_start && scancode <= music_key_scancode_end {
+			scale_i := scancode - music_key_scancode_start
+			midi := (octave + 1) * 12 + scale_i
+			selected_note.midi = midi
+			selected_note.frequency = midi_to_freq(midi)
+		} else if key == glfw.KEY_LEFT || key == glfw.KEY_RIGHT {
+			movement: f32 = mode == glfw.MOD_SHIFT ? 10 : 1
+			selected_note.start += key == glfw.KEY_LEFT ? -movement : movement
+		}
+	}
+
+	if key in waveform_key_map {
 		selected_waveform = waveform_key_map[key]
 	} else if key == glfw.KEY_ESCAPE {
 		glfw.SetWindowShouldClose(window, true)
