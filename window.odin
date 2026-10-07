@@ -75,7 +75,6 @@ key_callback :: proc "c" (window: glfw.WindowHandle, key, scancode_i32, action, 
 			scale_i := scancode - music_key_scancode_start
 			midi := (octave + 1) * 12 + scale_i
 			selected_note.midi = midi
-			selected_note.frequency = midi_to_freq(midi)
 		} else if key == glfw.KEY_LEFT || key == glfw.KEY_RIGHT {
 			movement: f32 = mode == glfw.MOD_SHIFT ? 10 : 1
 			selected_note.start += key == glfw.KEY_LEFT ? -movement : movement
@@ -100,7 +99,6 @@ selected_item_backup: TrackItem
 
 copy_track_item :: proc(from: TrackItem, to: ^TrackItem) {
 	to.duration = from.duration
-	to.frequency = from.frequency
 	to.duration = from.duration
 	to.start = from.start
 }

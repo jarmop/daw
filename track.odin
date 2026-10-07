@@ -19,10 +19,9 @@ import gl "vendor:OpenGL"
 // }
 
 TrackItem :: struct {
-	midi:      int,
-	frequency: f32,
-	start:     f32,
-	duration:  f32,
+	midi:     int,
+	start:    f32,
+	duration: f32,
 }
 
 track1_items: []TrackItem

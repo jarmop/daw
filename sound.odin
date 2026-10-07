@@ -61,12 +61,12 @@ play_sound :: proc() {
 	update_envelope()
 
 	track1_items = {
-		{midi = 62, frequency = midi_to_freq(62), start = 500, duration = 300},
-		{midi = 60, frequency = midi_to_freq(60), start = 1000, duration = 300},
-		{midi = 67, frequency = midi_to_freq(67), start = 1500, duration = 300},
+		{midi = 62, start = 500, duration = 300},
+		{midi = 60, start = 1000, duration = 300},
+		{midi = 67, start = 1500, duration = 300},
 	}
-	track2_items = {{midi = 64, frequency = midi_to_freq(64), start = 1000, duration = 300}}
-	track3_items = {{midi = 67, frequency = midi_to_freq(67), start = 1000, duration = 300}}
+	track2_items = {{midi = 62, start = 1000, duration = 300}}
+	track3_items = {{midi = 65, start = 1000, duration = 300}}
 	tracks[0] = track1_items
 	tracks[1] = track2_items
 	tracks[2] = track3_items
@@ -304,7 +304,7 @@ generate_track_samples :: proc(track_items: []TrackItem, samples: []f32) {
 			{duration = release, amp_target = 0},
 		}
 
-		add_envelope_samples(item_envelope, item.frequency, samples, &sample_i)
+		add_envelope_samples(item_envelope, midi_to_freq(item.midi), samples, &sample_i)
 
 		track_timer += item.duration
 	}
