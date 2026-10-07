@@ -173,6 +173,29 @@ get_track_duration :: proc(track: []TrackItem) -> f32 {
 	return last_item.start + last_item.duration
 }
 
+item_is_valid :: proc(track_items: []TrackItem, item_i: int) -> bool {
+	item1 := track_items[item_i]
+	item1_start := item1.start
+	item1_end := item1.start + item1.duration
+	for item2, i in track_items {
+		if i == item_i {
+			continue
+		}
+
+		item2_start := item2.start
+		item2_end := item2.start + item2.duration
+		is_fully_before := item1_end < item2_start
+		is_fully_after := item1_start > item2_end
+
+		if is_fully_before || is_fully_after {
+			continue
+		}
+
+		return false // invalid
+	}
+	return true
+}
+
 sort_tracks :: proc() {
 	for track_items, track_i in tracks {
 		slice.sort_by(track_items, compare_track_items)
