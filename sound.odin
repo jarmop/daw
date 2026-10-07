@@ -15,31 +15,6 @@ Waveform :: enum {
 	Sawtooth,
 }
 
-// Track :: struct {
-// 	// attack:            f32,
-// 	// decay:             f32,
-// 	// release:           f32,
-// 	// amplitude:         f32,
-// 	// sustain_amplitude: f32,
-// 	items: struct {
-// 		// sustain = duration - (a+d+r)
-// 		duration:  f32,
-// 		frequency: f32,
-// 	},
-// }
-
-TrackItem :: struct {
-	midi:      int,
-	frequency: f32,
-	start:     f32,
-	duration:  f32,
-}
-
-track1_items: []TrackItem
-track2_items: []TrackItem
-track3_items: []TrackItem
-tracks: [4][]TrackItem
-
 WaveformFunc :: proc "c" (phase: f32) -> f32
 
 waveform_function_map := map[Waveform]WaveformFunc {
@@ -86,11 +61,12 @@ play_sound :: proc() {
 	update_envelope()
 
 	track1_items = {
-		{midi = 60, frequency = midi_to_freq(60), start = 100, duration = 300},
-		{midi = 60, frequency = midi_to_freq(60), start = 600, duration = 300},
+		{midi = 62, frequency = midi_to_freq(62), start = 500, duration = 300},
+		{midi = 60, frequency = midi_to_freq(60), start = 1000, duration = 300},
+		{midi = 67, frequency = midi_to_freq(67), start = 1500, duration = 300},
 	}
-	track2_items = {{midi = 64, frequency = midi_to_freq(64), start = 600, duration = 300}}
-	track3_items = {{midi = 67, frequency = midi_to_freq(67), start = 600, duration = 300}}
+	track2_items = {{midi = 64, frequency = midi_to_freq(64), start = 1000, duration = 300}}
+	track3_items = {{midi = 67, frequency = midi_to_freq(67), start = 1000, duration = 300}}
 	tracks[0] = track1_items
 	tracks[1] = track2_items
 	tracks[2] = track3_items
@@ -252,11 +228,13 @@ toggle_playback :: proc() {
 		// generated_samples = generate_envelope_samples(envelope, frequency)
 		// generated_samples = generate_track_samples(track1_items)
 		i := 0
+		samples_count := int(frames_per_ms * get_tracks_duration(tracks[:]))
 		for track_items in tracks {
 			if len(track_items) == 0 {
 				continue
 			}
-			sample_tracks[i] = generate_track_samples(track_items)
+			sample_tracks[i] = make([]f32, samples_count)
+			generate_track_samples(track_items, sample_tracks[i][:])
 			i += 1
 		}
 		envelope_i = 0
@@ -300,10 +278,7 @@ midi_to_text :: proc(midi: int) -> string {
 	return fmt.tprintf("%s%d", music_keys[scale_i], octave)
 }
 
-generate_track_samples :: proc(track_items: []TrackItem) -> []f32 {
-	samples_count := int(frames_per_ms * get_track_duration(track_items))
-	samples := make([]f32, samples_count)
-
+generate_track_samples :: proc(track_items: []TrackItem, samples: []f32) {
 	attack := envelope[0].duration
 	decay := envelope[1].duration
 	release := envelope[2].duration
@@ -333,8 +308,6 @@ generate_track_samples :: proc(track_items: []TrackItem) -> []f32 {
 
 		track_timer += item.duration
 	}
-
-	return samples
 }
 
 generate_envelope_samples :: proc(envelope: []EnvelopeSegment, frequency: f32) -> []f32 {

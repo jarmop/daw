@@ -89,7 +89,7 @@ key_callback :: proc "c" (window: glfw.WindowHandle, key, scancode_i32, action, 
 	} else if key == glfw.KEY_SPACE {
 		toggle_playback()
 	} else if key == glfw.KEY_S {
-		wav_save()
+		// wav_save()
 	}
 }
 
@@ -133,20 +133,19 @@ mouse_button_callback :: proc "c" (window: glfw.WindowHandle, button, action, mo
 						}
 						track_pos.y += line_height
 					}
-					for item, i in tracks[selected_track_i] {
-						note_x_start := item.start * track_px_per_ms
-						note_x_end := note_x_start + item.duration * track_px_per_ms
-						if x >= note_x_start && x <= note_x_end {
-							selected_track_item_i = i
-							break
-						}
-					}
+					selected_track_item_i = get_hovered_track_item_i(tracks[selected_track_i])
 				}
 			}
 		} else {
 			left_mouse_pressed = false
 			left_mouse_first_press = true
 			slider_dragged = nil
+
+			if selected_track_i > -1 && selected_track_item_i > -1 {
+				sort_tracks()
+				// Update the selected_track_item_i after sorting items
+				selected_track_item_i = get_hovered_track_item_i(tracks[selected_track_i])
+			}
 		}
 	}
 }
@@ -267,4 +266,17 @@ cursor_within_button :: proc() -> ^Button {
 	}
 
 	return nil
+}
+
+get_hovered_track_item_i :: proc(track_items: []TrackItem) -> int {
+	x64, y64 := glfw.GetCursorPos(window)
+	x := f32(x64)
+	for item, i in track_items {
+		note_x_start := item.start * track_px_per_ms
+		note_x_end := note_x_start + item.duration * track_px_per_ms
+		if x >= note_x_start && x <= note_x_end {
+			return i
+		}
+	}
+	return -1
 }

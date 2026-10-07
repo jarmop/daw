@@ -2,7 +2,33 @@ package daw
 
 import "core:fmt"
 import "core:math"
+import "core:slice"
 import gl "vendor:OpenGL"
+
+// Track :: struct {
+// 	// attack:            f32,
+// 	// decay:             f32,
+// 	// release:           f32,
+// 	// amplitude:         f32,
+// 	// sustain_amplitude: f32,
+// 	items: struct {
+// 		// sustain = duration - (a+d+r)
+// 		duration:  f32,
+// 		frequency: f32,
+// 	},
+// }
+
+TrackItem :: struct {
+	midi:      int,
+	frequency: f32,
+	start:     f32,
+	duration:  f32,
+}
+
+track1_items: []TrackItem
+track2_items: []TrackItem
+track3_items: []TrackItem
+tracks: [4][]TrackItem
 
 track_vao: u32
 track_vbo: u32
@@ -92,7 +118,7 @@ track_vertices_update :: proc() {
 	// ---------------
 	// Stylus
 	// ---------------
-	stylus_color: Vec4 = {1, 0, 0, 1}
+	stylus_color: Vec4 = {1, 0, 0, 0.4}
 	progress := f32(sample_i) * ms_per_frame * track_px_per_ms
 	track_vertices[i].pos = {progress, 0}
 	track_vertices[i].color = stylus_color
@@ -108,6 +134,8 @@ track_vertices_update :: proc() {
 	track_pos_abs := tracks_pos
 	track_pos_rel: Vec2 = {0, 0}
 	i = 0
+	selected_note_color: Vec4 = {1, 1, 1, 0.2}
+	note_color: Vec4 = {1, 1, 1, 0.08}
 	for track_items, track_i in tracks {
 		for item, item_i in track_items {
 			note_pos_abs := track_pos_abs + {item.start * track_px_per_ms, 0}
@@ -117,7 +145,7 @@ track_vertices_update :: proc() {
 
 			note_pos_rel := track_pos_rel + {item.start * track_px_per_ms, 0}
 			color: Vec4 =
-				track_i == selected_track_i && item_i == selected_track_item_i ? {0, 0, 0.2, 0.2} : {0, 0, 0, 0.1}
+				track_i == selected_track_i && item_i == selected_track_item_i ? selected_note_color : note_color
 			quad := make_quad_color(note_width, line_height, note_pos_rel.x, note_pos_rel.y, color)
 			append(&notes_vertices, ..quad[:])
 			i += 1
@@ -129,10 +157,34 @@ track_vertices_update :: proc() {
 	vbo_color_update(&notes_vbo, notes_vertices[:])
 }
 
+get_tracks_duration :: proc(tracks: [][]TrackItem) -> f32 {
+	tracks_duration: f32 = 0
+	for track_items in tracks {
+		tracks_duration = max(get_track_duration(track_items), tracks_duration)
+	}
+	return tracks_duration
+}
+
 get_track_duration :: proc(track: []TrackItem) -> f32 {
 	if len(track) == 0 {
 		return 0
 	}
 	last_item := track[len(track) - 1]
 	return last_item.start + last_item.duration
+}
+
+sort_tracks :: proc() {
+	for track_items, track_i in tracks {
+		slice.sort_by(track_items, compare_track_items)
+	}
+
+	// for track_items, track_i in tracks {
+	// 	for item, item_i in track_items {
+	// 		fmt.println(item.midi)
+	// 	}
+	// }
+}
+
+compare_track_items :: proc(lhs, rhs: TrackItem) -> bool {
+	return lhs.start < rhs.start
 }
