@@ -56,20 +56,9 @@ play_sound :: proc() {
 	// midi := 60 // C8
 	// midi := 127 // G9
 
-	frequency = midi_to_freq(midi)
-
 	update_envelope()
 
-	track1_items = {
-		{midi = 62, start = 500, duration = 300},
-		{midi = 60, start = 1000, duration = 300},
-		{midi = 67, start = 1500, duration = 300},
-	}
-	track2_items = {{midi = 62, start = 1000, duration = 300}}
-	track3_items = {{midi = 65, start = 1000, duration = 300}}
-	tracks[0] = track1_items
-	tracks[1] = track2_items
-	tracks[2] = track3_items
+	track_init_data()
 
 	config := ma.device_config_init(ma.device_type.playback)
 
@@ -234,7 +223,7 @@ toggle_playback :: proc() {
 				continue
 			}
 			sample_tracks[i] = make([]f32, samples_count)
-			generate_track_samples(track_items, sample_tracks[i][:])
+			generate_track_samples(track_items[:], sample_tracks[i][:])
 			i += 1
 		}
 		envelope_i = 0

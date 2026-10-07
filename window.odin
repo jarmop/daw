@@ -140,7 +140,7 @@ mouse_button_callback :: proc "c" (window: glfw.WindowHandle, button, action, mo
 						}
 						track_pos.y += line_height
 					}
-					selected_track_item_i = get_hovered_track_item_i(tracks[selected_track_i])
+					selected_track_item_i = get_hovered_track_item_i(tracks[selected_track_i][:])
 					if selected_track_item_i > -1 {
 						copy_track_item(
 							tracks[selected_track_i][selected_track_item_i],
@@ -155,7 +155,7 @@ mouse_button_callback :: proc "c" (window: glfw.WindowHandle, button, action, mo
 			slider_dragged = nil
 
 			if selected_track_i > -1 && selected_track_item_i > -1 {
-				if !item_is_valid(tracks[selected_track_i], selected_track_item_i) {
+				if !item_is_valid(tracks[selected_track_i][:], selected_track_item_i) {
 					copy_track_item(
 						selected_item_backup,
 						&tracks[selected_track_i][selected_track_item_i],
@@ -164,7 +164,7 @@ mouse_button_callback :: proc "c" (window: glfw.WindowHandle, button, action, mo
 				}
 				sort_tracks()
 				// Update the selected_track_item_i after sorting items
-				selected_track_item_i = get_hovered_track_item_i(tracks[selected_track_i])
+				selected_track_item_i = get_hovered_track_item_i(tracks[selected_track_i][:])
 			}
 		}
 	}

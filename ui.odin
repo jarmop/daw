@@ -52,7 +52,7 @@ ui_run :: proc() {
 
 	envelope_init()
 
-	track_init()
+	track_init_ui()
 
 	c: f32 = bg_color
 	gl.ClearColor(c, c, c, 1)

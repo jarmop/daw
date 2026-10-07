@@ -1,3 +1,5 @@
+#+feature dynamic-literals
+
 package daw
 
 import "core:fmt"
@@ -24,10 +26,7 @@ TrackItem :: struct {
 	duration: f32,
 }
 
-track1_items: []TrackItem
-track2_items: []TrackItem
-track3_items: []TrackItem
-tracks: [4][]TrackItem
+tracks: [4][dynamic]TrackItem
 
 track_vao: u32
 track_vbo: u32
@@ -42,7 +41,14 @@ notes_vao: u32
 notes_vbo: u32
 notes_vertices: [dynamic]ColorVertex
 
-track_init :: proc() {
+track_init_data :: proc() {
+	tracks[0] = {{midi = 60, start = 0, duration = 2000}}
+	tracks[1] = {{midi = 64, start = 0, duration = 2000}}
+	tracks[2] = {{midi = 67, start = 0, duration = 2000}}
+	tracks[3] = {{midi = 71, start = 0, duration = 2000}}
+}
+
+track_init_ui :: proc() {
 	gl.GenVertexArrays(1, &track_vao)
 	gl.BindVertexArray(track_vao)
 	vbo_color_init(&track_vbo)
@@ -76,7 +82,7 @@ track_vertices_update :: proc() {
 	step_length_px: f32 = step_length_ms * track_px_per_ms
 	tracks_duration: f32 = 0
 	for track_items in tracks {
-		tracks_duration = max(get_track_duration(track_items), tracks_duration)
+		tracks_duration = max(get_track_duration(track_items[:]), tracks_duration)
 	}
 	// track_steps := int(tracks_duration / step_length_ms + 0.5)
 	// tracks_size = {f32(track_steps) * step_length_px, f32(len(tracks)) * line_height}
@@ -156,10 +162,10 @@ track_vertices_update :: proc() {
 	vbo_color_update(&notes_vbo, notes_vertices[:])
 }
 
-get_tracks_duration :: proc(tracks: [][]TrackItem) -> f32 {
+get_tracks_duration :: proc(tracks: [][dynamic]TrackItem) -> f32 {
 	tracks_duration: f32 = 0
 	for track_items in tracks {
-		tracks_duration = max(get_track_duration(track_items), tracks_duration)
+		tracks_duration = max(get_track_duration(track_items[:]), tracks_duration)
 	}
 	return tracks_duration
 }
@@ -197,7 +203,7 @@ item_is_valid :: proc(track_items: []TrackItem, item_i: int) -> bool {
 
 sort_tracks :: proc() {
 	for track_items, track_i in tracks {
-		slice.sort_by(track_items, compare_track_items)
+		slice.sort_by(track_items[:], compare_track_items)
 	}
 
 	// for track_items, track_i in tracks {
