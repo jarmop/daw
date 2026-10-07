@@ -59,7 +59,8 @@ slider_draw :: proc() {
 
 	for slider in sliders {
 		shader_set_vec2(ui_program, "mesh_pos", slider.pos)
-		shader_set_vec4(ui_program, "color", {0.2, 0.2, 0.2, 1})
+		c: f32 = 0.2
+		shader_set_vec4(ui_program, "color", {c, c, c, 1})
 		gl.BindVertexArray(slider_bar_vao)
 		gl.DrawArrays(gl.TRIANGLES, 0, i32(len(slider_bar_vertices)))
 
@@ -67,7 +68,8 @@ slider_draw :: proc() {
 		handle_pos := slider.pos + {handle_x, 0}
 
 		shader_set_vec2(ui_program, "mesh_pos", handle_pos)
-		shader_set_vec4(ui_program, "color", {0, 0, 0, 1})
+		c = 0.3
+		shader_set_vec4(ui_program, "color", {c, c, c, 1})
 		gl.BindVertexArray(slider_handle_vao)
 		gl.DrawArrays(gl.TRIANGLES, 0, i32(len(slider_handle_vertices)))
 	}

@@ -7,6 +7,10 @@ import glfw "vendor:glfw"
 
 padding :: 4
 
+text_c :: 0.8
+text_color: Vec4 : {text_c, text_c, text_c, 0.8}
+bg_color :: 0.12
+
 sliders: []Slider
 col_1_width: f32 = 145
 col_2_width: f32 = 145
@@ -50,7 +54,8 @@ ui_run :: proc() {
 
 	track_init()
 
-	gl.ClearColor(0.5, 0.5, 0.5, 1)
+	c: f32 = bg_color
+	gl.ClearColor(c, c, c, 1)
 
 	// gl.Enable(gl.DEPTH_TEST)
 

@@ -21,7 +21,8 @@ waveform_draw :: proc() {
 
 	shader_set_vec2(ui_program, "screen_size", {f32(WINDOW_WIDTH), f32(WINDOW_HEIGHT)})
 	shader_set_vec2(ui_program, "mesh_pos", wave_form_pos)
-	shader_set_vec4(ui_program, "color", {1, 1, 1, 1})
+	c: f32 = 0.4
+	shader_set_vec4(ui_program, "color", {c, c, c, 1})
 
 	gl.BindVertexArray(waveform_vao)
 	gl.DrawArrays(gl.LINE_STRIP, 0, i32(len(waveform_vertices)))

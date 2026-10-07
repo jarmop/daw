@@ -223,6 +223,7 @@ text_draw :: proc() {
 	gl.UseProgram(text_program)
 
 	shader_set_vec2(ui_program, "screen_size", {f32(WINDOW_WIDTH), f32(WINDOW_HEIGHT)})
+	shader_set_vec4(ui_program, "color", text_color)
 
 	gl.ActiveTexture(gl.TEXTURE0)
 	gl.BindTexture(gl.TEXTURE_2D, text_texture)
