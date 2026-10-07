@@ -36,16 +36,29 @@ tracks_size: Vec2
 tracks_pos: Vec2
 
 track_px_per_ms: f32 = 0.1
+track_ms_per_px := 1 / track_px_per_ms
 
 notes_vao: u32
 notes_vbo: u32
 notes_vertices: [dynamic]ColorVertex
 
 track_init_data :: proc() {
-	tracks[0] = {{midi = 60, start = 0, duration = 2000}}
-	tracks[1] = {{midi = 64, start = 0, duration = 2000}}
-	tracks[2] = {{midi = 67, start = 0, duration = 2000}}
-	tracks[3] = {{midi = 71, start = 0, duration = 2000}}
+	tracks[0] = {
+		{midi = 60, start = 0, duration = 2000},
+		{midi = 60, start = 3000, duration = 500},
+	}
+	tracks[1] = {
+		{midi = 64, start = 0, duration = 2000},
+		{midi = 64, start = 3000, duration = 500},
+	}
+	tracks[2] = {
+		{midi = 67, start = 0, duration = 2000},
+		{midi = 67, start = 3000, duration = 500},
+	}
+	tracks[3] = {
+		{midi = 71, start = 0, duration = 2000},
+		{midi = 71, start = 3000, duration = 500},
+	}
 }
 
 track_init_ui :: proc() {

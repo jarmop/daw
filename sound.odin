@@ -313,13 +313,13 @@ add_envelope_samples :: proc(
 	samples: []f32,
 	sample_i: ^int,
 ) {
-	samples_count := get_envelope_samples_count(envelope)
+	envelope_samples_count := get_envelope_samples_count(envelope)
 	phase: f32 = 0
 	frame_amplitude: f32 = 0
 	envelope_i = 0
 	segment, segment_timer, amp_increment_per_frame := segment_start(envelope, envelope_i)
 
-	for i in 0 ..< samples_count {
+	for i in 0 ..< envelope_samples_count {
 		if segment_timer >= segment.duration {
 			if envelope_i == len(envelope) - 1 {
 				samples[sample_i^] = 0

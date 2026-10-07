@@ -107,12 +107,13 @@ mouse_button_callback :: proc "c" (window: glfw.WindowHandle, button, action, mo
 	context = runtime.default_context()
 
 	if button == glfw.MOUSE_BUTTON_LEFT {
+		x64, y64 := glfw.GetCursorPos(window)
+		x := f32(x64)
+		y := f32(y64)
+
 		if action == glfw.PRESS {
 			left_mouse_pressed = true
 
-			x64, y64 := glfw.GetCursorPos(window)
-			x := f32(x64)
-			y := f32(y64)
 
 			selected_track_i = -1
 			selected_track_item_i = -1
@@ -162,6 +163,22 @@ mouse_button_callback :: proc "c" (window: glfw.WindowHandle, button, action, mo
 					)
 					return
 				}
+				sort_tracks()
+				// Update the selected_track_item_i after sorting items
+				selected_track_item_i = get_hovered_track_item_i(tracks[selected_track_i][:])
+			} else if selected_track_i > -1 {
+				start := math.round((x - tracks_pos.x) * track_ms_per_px)
+				append(
+					&tracks[selected_track_i],
+					TrackItem{midi = 60, start = start, duration = 300},
+				)
+				added_item_i := len(tracks[selected_track_i]) - 1
+
+				if !item_is_valid(tracks[selected_track_i][:], added_item_i) {
+					pop(&tracks[selected_track_i])
+					return
+				}
+
 				sort_tracks()
 				// Update the selected_track_item_i after sorting items
 				selected_track_item_i = get_hovered_track_item_i(tracks[selected_track_i][:])
