@@ -4,11 +4,12 @@ layout(location = 0) in vec2 vert_pos;
 layout(location = 1) in vec4 vert_color;
 
 uniform vec2 screen_size;
+uniform vec2 mesh_pos;
 
 out vec4 frag_color;
 
 void main() {
-	vec2 p = vert_pos / screen_size * 2.0 - 1.0;
+	vec2 p = (mesh_pos + vert_pos) / screen_size * 2.0 - 1.0;
 
 	// Flip Y
 	p.y = -p.y;

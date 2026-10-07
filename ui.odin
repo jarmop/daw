@@ -128,7 +128,7 @@ ui_update :: proc() {
 	envelope_pos = {x, y}
 	envelope_vertices_update()
 
-	y += 10
+	y += 20
 	tracks_pos = {x, y}
 	track_vertices_update()
 
