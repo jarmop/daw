@@ -55,6 +55,11 @@ load_tracks :: proc() -> Tracks {
 		track_count = max(track_count, item.track_i + 1)
 	}
 
+	if track_count == 0 {
+		tracks := make(Tracks, 1)
+		return tracks
+	}
+
 	tracks := make(Tracks, track_count)
 	for item in all_track_items {
 		append(

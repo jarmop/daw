@@ -206,10 +206,13 @@ toggle_playback :: proc() {
 			delete(sample_tracks[i])
 		}
 	} else {
-
 		active_tracks_count := 0
 		for track_items in tracks {
 			active_tracks_count += len(track_items) > 0 ? 1 : 0
+		}
+
+		if active_tracks_count == 0 {
+			return
 		}
 
 		sample_tracks = make([][]f32, active_tracks_count)
