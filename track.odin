@@ -27,7 +27,8 @@ TrackItem :: struct {
 	duration: f32,
 }
 
-tracks: [4][dynamic]TrackItem
+TRACK_COUNT :: 4
+tracks: [][dynamic]TrackItem
 
 track_vao: u32
 track_vbo: u32
@@ -44,10 +45,11 @@ notes_vbo: u32
 notes_vertices: [dynamic]ColorVertex
 
 track_init_data :: proc() {
-	tracks[0] = {
-		{midi = 60, start = 0, duration = 2000},
-		{midi = 60, start = 3000, duration = 500},
-	}
+	tracks = load_tracks()
+	// tracks[0] = {
+	// 	{midi = 60, start = 0, duration = 2000},
+	// 	{midi = 60, start = 3000, duration = 500},
+	// }
 }
 
 track_init_ui :: proc() {

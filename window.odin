@@ -59,6 +59,8 @@ key_callback :: proc "c" (window: glfw.WindowHandle, key, scancode, action, mode
 		selected_waveform = waveform_key_map[key]
 	} else if key == glfw.KEY_ESCAPE {
 		glfw.SetWindowShouldClose(window, true)
+	} else if key == glfw.KEY_S {
+		save_tracks(tracks[:])
 	}
 
 	track_key_callback(key, int(scancode), mode)
