@@ -2,6 +2,7 @@ package daw
 
 import "core:fmt"
 import gl "vendor:OpenGL"
+import "vendor:glfw"
 
 button_vao: u32
 button_vertices: [4]Vertex
@@ -63,4 +64,37 @@ button_draw :: proc() {
 		gl.DrawArrays(gl.POINTS, 0, i32(len(button_vertices)))
 		gl.PointSize(1.0)
 	}
+}
+
+
+// ------------------------------------------------
+//
+//                 WINDOW CALLBACKS
+//
+// ------------------------------------------------
+
+button_hovered: ^Button
+
+button_on_left_click :: proc() {
+	if button_hovered != nil {
+		button_hovered.on_click()
+	}
+}
+
+button_cursor_hover_callback :: proc(window: glfw.WindowHandle) -> bool {
+	x64, y64 := glfw.GetCursorPos(window)
+	x := f32(x64)
+	y := f32(y64)
+	for &button in buttons {
+		if x >= button.pos.x &&
+		   x <= button.pos.x + button_width &&
+		   y >= button.pos.y &&
+		   y <= button.pos.y + button_height {
+			button_hovered := &button
+			glfw.SetCursor(window, glfw.CreateStandardCursor(glfw.POINTING_HAND_CURSOR))
+			return true
+		}
+	}
+
+	return false
 }

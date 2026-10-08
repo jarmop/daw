@@ -4,6 +4,7 @@ import "core:fmt"
 import "core:math/linalg/glsl"
 import "core:os"
 import gl "vendor:OpenGL"
+import "vendor:glfw"
 
 slider_bar_vao: u32
 slider_bar_vertices: [6]Vertex
@@ -73,4 +74,127 @@ slider_draw :: proc() {
 		gl.BindVertexArray(slider_handle_vao)
 		gl.DrawArrays(gl.TRIANGLES, 0, i32(len(slider_handle_vertices)))
 	}
+}
+
+
+// ------------------------------------------------
+//
+//                 WINDOW CALLBACKS
+//
+// ------------------------------------------------
+
+slider_dragged: ^Slider
+slider_hovered: ^Slider
+is_slider_handle_hovered := false
+
+slider_mouse_button_callback :: proc(window: glfw.WindowHandle, button, action: i32) {
+	if button == glfw.MOUSE_BUTTON_LEFT {
+		if action == glfw.PRESS && slider_hovered != nil {
+			if is_slider_handle_hovered {
+				// Grab handle
+				slider_dragged = slider_hovered
+			} else {
+				// Move handle where the cursor is and then grab it
+				x64, y64 := glfw.GetCursorPos(window)
+				x := f32(x64)
+				s := slider_hovered
+
+				s.value^ = (x - s.pos.x) / bar_width * s.max
+				s.on_value_changed()
+
+				is_slider_handle_hovered = true
+				slider_dragged = slider_hovered
+			}
+		} else {
+			slider_dragged = nil
+		}
+	}
+}
+
+slider_cursor_drag_callback :: proc(x: f32, x_diff: f32) {
+	if slider_dragged != nil {
+		s := slider_dragged
+		s_start := s.pos.x
+		s_end := s.pos.x + bar_width
+		if x < s_start {
+			if x_diff > 0 {
+				return
+			} else if s.value^ != 0 {
+				s.value^ = 0
+			}
+		} else if x > s_end {
+			if x_diff < 0 {
+				return
+			} else if s.value^ != s.max {
+				s.value^ = s.max
+			}
+		} else {
+			s.value^ = s.value^ + (f32(x_diff) / bar_width * s.max)
+		}
+
+		s.on_value_changed()
+	}
+}
+
+slider_cursor_hover_callback :: proc(window: glfw.WindowHandle) -> bool {
+	slider_hovered = cursor_within_slider_bar()
+	if slider_hovered != nil {
+		x64, y64 := glfw.GetCursorPos(window)
+		x := f32(x64)
+		y := f32(y64)
+		s := slider_hovered
+		handle_x := s.value^ / s.max * bar_width - handle_size / 2
+		handle_y := (-handle_size + bar_height) / 2
+		handle_pos := s.pos + {handle_x, handle_y}
+		is_slider_handle_hovered =
+			x >= handle_pos.x &&
+			x <= handle_pos.x + handle_size &&
+			y >= handle_pos.y &&
+			y <= handle_pos.y + handle_size
+
+		glfw.SetCursor(window, glfw.CreateStandardCursor(glfw.POINTING_HAND_CURSOR))
+		return true
+	}
+
+	is_slider_handle_hovered = false
+
+	return false
+}
+
+cursor_within_slider_handle :: proc() -> ^Slider {
+	x64, y64 := glfw.GetCursorPos(window)
+	x := f32(x64)
+	y := f32(y64)
+	handle_y := (-handle_size + bar_height) / 2
+
+	for &slider, i in sliders {
+		handle_x := slider.value^ / slider.max * bar_width - handle_size / 2
+		handle_pos := slider.pos + {handle_x, handle_y}
+
+		if (x >= handle_pos.x &&
+			   x <= handle_pos.x + handle_size &&
+			   y >= handle_pos.y &&
+			   y <= handle_pos.y + handle_size) {
+			return &slider
+		}
+	}
+
+	return nil
+}
+
+cursor_within_slider_bar :: proc() -> ^Slider {
+	x64, y64 := glfw.GetCursorPos(window)
+	x := f32(x64)
+	y := f32(y64)
+	handle_y := (-handle_size + bar_height) / 2
+
+	for &s, i in sliders {
+		y_start := s.pos.y - handle_size / 2
+		y_end := y_start + handle_size
+		if x >= s.pos.x && x <= s.pos.x + bar_width && y >= y_start && y < y_end {
+			return &s
+		}
+	}
+
+	return nil
 }

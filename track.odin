@@ -6,6 +6,7 @@ import "core:fmt"
 import "core:math"
 import "core:slice"
 import gl "vendor:OpenGL"
+import glfw "vendor:glfw"
 
 // Track :: struct {
 // 	// attack:            f32,
@@ -216,4 +217,137 @@ sort_tracks :: proc() {
 
 compare_track_items :: proc(lhs, rhs: TrackItem) -> bool {
 	return lhs.start < rhs.start
+}
+
+
+// ------------------------------------------------
+//
+//                 WINDOW CALLBACKS
+//
+// ------------------------------------------------
+
+selected_track_i: int = -1
+selected_track_item_i: int = -1
+
+selected_item_backup: TrackItem
+
+track_key_callback :: proc(key: i32, scancode: int, mode: i32) {
+	music_key := 0 // C = 0, C# = 1, B = 11
+	octave := 4 // -1 - 9
+	midi := (octave + 1) * 12 + music_key
+
+	music_key_scancode_start := 16 // "Q"
+	music_key_scancode_end := music_key_scancode_start + 11 // The key after "Å"
+
+	note_selected := selected_track_i > -1 && selected_track_item_i > -1
+	if note_selected {
+		selected_note := &tracks[selected_track_i][selected_track_item_i]
+		if scancode >= music_key_scancode_start && scancode <= music_key_scancode_end {
+			scale_i := scancode - music_key_scancode_start
+			midi := (octave + 1) * 12 + scale_i
+			selected_note.midi = midi
+		} else if key == glfw.KEY_LEFT || key == glfw.KEY_RIGHT {
+			movement: f32 = mode == glfw.MOD_SHIFT ? 10 : 1
+			selected_note.start += key == glfw.KEY_LEFT ? -movement : movement
+		}
+	}
+
+	if key == glfw.KEY_SPACE {
+		toggle_playback()
+	} else if key == glfw.KEY_DELETE && selected_track_item_i > -1 {
+		ordered_remove(&tracks[selected_track_i], selected_track_item_i)
+		selected_track_item_i = -1
+	} else if key == glfw.KEY_S {
+		// wav_save()
+	}
+}
+
+track_mouse_button_callback :: proc(window: glfw.WindowHandle, button, action: i32) {
+	if button == glfw.MOUSE_BUTTON_LEFT {
+		x64, y64 := glfw.GetCursorPos(window)
+		x := f32(x64)
+		y := f32(y64)
+
+		if action == glfw.PRESS {
+			selected_track_i = -1
+			selected_track_item_i = -1
+
+			if x >= tracks_pos.x &&
+			   x <= tracks_pos.x + tracks_size.x &&
+			   y >= tracks_pos.y &&
+			   y <= tracks_pos.y + tracks_size.y {
+				track_pos := tracks_pos
+				for track, i in tracks {
+					if y >= track_pos.y && y <= track_pos.y + line_height {
+						selected_track_i = i
+						break
+					}
+					track_pos.y += line_height
+				}
+				selected_track_item_i = get_hovered_track_item_i(tracks[selected_track_i][:])
+				if selected_track_item_i > -1 {
+					copy_track_item(
+						tracks[selected_track_i][selected_track_item_i],
+						&selected_item_backup,
+					)
+				}
+			}
+
+		} else {
+			if selected_track_i > -1 && selected_track_item_i > -1 {
+				if !item_is_valid(tracks[selected_track_i][:], selected_track_item_i) {
+					copy_track_item(
+						selected_item_backup,
+						&tracks[selected_track_i][selected_track_item_i],
+					)
+					return
+				}
+				sort_tracks()
+				// Update the selected_track_item_i after sorting items
+				selected_track_item_i = get_hovered_track_item_i(tracks[selected_track_i][:])
+			} else if selected_track_i > -1 {
+				start := math.round((x - tracks_pos.x) * track_ms_per_px)
+				append(
+					&tracks[selected_track_i],
+					TrackItem{midi = 60, start = start, duration = 300},
+				)
+				added_item_i := len(tracks[selected_track_i]) - 1
+
+				if !item_is_valid(tracks[selected_track_i][:], added_item_i) {
+					pop(&tracks[selected_track_i])
+					return
+				}
+
+				sort_tracks()
+				// Update the selected_track_item_i after sorting items
+				selected_track_item_i = get_hovered_track_item_i(tracks[selected_track_i][:])
+			}
+		}
+	}
+}
+
+track_cursor_drag_callback :: proc(x_diff: f32) {
+	if selected_track_item_i > -1 {
+		selected_note := &tracks[selected_track_i][selected_track_item_i]
+		selected_note.start += math.round(x_diff / track_px_per_ms)
+	}
+}
+
+copy_track_item :: proc(from: TrackItem, to: ^TrackItem) {
+	to.duration = from.duration
+	to.duration = from.duration
+	to.start = from.start
+}
+
+get_hovered_track_item_i :: proc(track_items: []TrackItem) -> int {
+	x64, y64 := glfw.GetCursorPos(window)
+	x := f32(x64)
+	for item, i in track_items {
+		note_x_start := item.start * track_px_per_ms
+		note_x_end := note_x_start + item.duration * track_px_per_ms
+		if x >= note_x_start && x <= note_x_end {
+			return i
+		}
+	}
+	return -1
 }

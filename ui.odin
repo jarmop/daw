@@ -45,7 +45,7 @@ ui_run :: proc() {
 
 	// button_init()
 	// buttons = {
-	// 	{pos = {WINDOW_WIDTH - button_width - padding, padding}, on_click = toggle_playback},
+	// 	{pos = {f32(WINDOW_WIDTH) - button_width - padding, padding}, on_click = toggle_playback},
 	// }
 
 	text_init()

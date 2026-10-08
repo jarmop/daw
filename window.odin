@@ -23,10 +23,6 @@ waveform_key_map := map[i32]Waveform {
 left_mouse_pressed := false
 left_mouse_first_press := true
 x_prev: f32 = 0
-slider_dragged: ^Slider
-slider_hovered: ^Slider
-is_slider_handle_hovered := false
-button_hovered: ^Button
 
 window_init :: proc() {
 	glfw.Init()
@@ -52,142 +48,39 @@ framebuffer_size_callback :: proc "c" (window: glfw.WindowHandle, width: i32, he
 	WINDOW_HEIGHT = height
 }
 
-key_callback :: proc "c" (window: glfw.WindowHandle, key, scancode_i32, action, mode: i32) {
+key_callback :: proc "c" (window: glfw.WindowHandle, key, scancode, action, mode: i32) {
 	context = runtime.default_context()
 
 	if action != glfw.PRESS {
 		return
 	}
 
-	scancode := int(scancode_i32)
-
-	music_key := 0 // C = 0, C# = 1, B = 11
-	octave := 4 // -1 - 9
-	midi := (octave + 1) * 12 + music_key
-
-	music_key_scancode_start := 16 // "Q"
-	music_key_scancode_end := music_key_scancode_start + 11 // The key after "Å"
-
-	note_selected := selected_track_i > -1 && selected_track_item_i > -1
-	if note_selected {
-		selected_note := &tracks[selected_track_i][selected_track_item_i]
-		if scancode >= music_key_scancode_start && scancode <= music_key_scancode_end {
-			scale_i := scancode - music_key_scancode_start
-			midi := (octave + 1) * 12 + scale_i
-			selected_note.midi = midi
-		} else if key == glfw.KEY_LEFT || key == glfw.KEY_RIGHT {
-			movement: f32 = mode == glfw.MOD_SHIFT ? 10 : 1
-			selected_note.start += key == glfw.KEY_LEFT ? -movement : movement
-		}
-	}
-
 	if key in waveform_key_map {
 		selected_waveform = waveform_key_map[key]
 	} else if key == glfw.KEY_ESCAPE {
 		glfw.SetWindowShouldClose(window, true)
-	} else if key == glfw.KEY_SPACE {
-		toggle_playback()
-	} else if key == glfw.KEY_DELETE && selected_track_item_i > -1 {
-		ordered_remove(&tracks[selected_track_i], selected_track_item_i)
-		selected_track_item_i = -1
-	} else if key == glfw.KEY_S {
-		// wav_save()
 	}
-}
 
-selected_track_i: int = -1
-selected_track_item_i: int = -1
-
-selected_item_backup: TrackItem
-
-copy_track_item :: proc(from: TrackItem, to: ^TrackItem) {
-	to.duration = from.duration
-	to.duration = from.duration
-	to.start = from.start
+	track_key_callback(key, int(scancode), mode)
 }
 
 mouse_button_callback :: proc "c" (window: glfw.WindowHandle, button, action, mods: i32) {
 	context = runtime.default_context()
 
 	if button == glfw.MOUSE_BUTTON_LEFT {
-		x64, y64 := glfw.GetCursorPos(window)
-		x := f32(x64)
-		y := f32(y64)
-
 		if action == glfw.PRESS {
 			left_mouse_pressed = true
 
-
-			selected_track_i = -1
-			selected_track_item_i = -1
-
-			if slider_hovered != nil {
-				s := slider_hovered
-				s.value^ = (x - s.pos.x) / bar_width * s.max
-				s.on_value_changed()
-
-				if is_slider_handle_hovered {
-					slider_dragged = slider_hovered
-				}
-			} else if button_hovered != nil {
-				button_hovered.on_click()
-			} else {
-				if x >= tracks_pos.x &&
-				   x <= tracks_pos.x + tracks_size.x &&
-				   y >= tracks_pos.y &&
-				   y <= tracks_pos.y + tracks_size.y {
-					track_pos := tracks_pos
-					for track, i in tracks {
-						if y >= track_pos.y && y <= track_pos.y + line_height {
-							selected_track_i = i
-							break
-						}
-						track_pos.y += line_height
-					}
-					selected_track_item_i = get_hovered_track_item_i(tracks[selected_track_i][:])
-					if selected_track_item_i > -1 {
-						copy_track_item(
-							tracks[selected_track_i][selected_track_item_i],
-							&selected_item_backup,
-						)
-					}
-				}
-			}
+			button_on_left_click()
 		} else {
 			left_mouse_pressed = false
 			left_mouse_first_press = true
-			slider_dragged = nil
-
-			if selected_track_i > -1 && selected_track_item_i > -1 {
-				if !item_is_valid(tracks[selected_track_i][:], selected_track_item_i) {
-					copy_track_item(
-						selected_item_backup,
-						&tracks[selected_track_i][selected_track_item_i],
-					)
-					return
-				}
-				sort_tracks()
-				// Update the selected_track_item_i after sorting items
-				selected_track_item_i = get_hovered_track_item_i(tracks[selected_track_i][:])
-			} else if selected_track_i > -1 {
-				start := math.round((x - tracks_pos.x) * track_ms_per_px)
-				append(
-					&tracks[selected_track_i],
-					TrackItem{midi = 60, start = start, duration = 300},
-				)
-				added_item_i := len(tracks[selected_track_i]) - 1
-
-				if !item_is_valid(tracks[selected_track_i][:], added_item_i) {
-					pop(&tracks[selected_track_i])
-					return
-				}
-
-				sort_tracks()
-				// Update the selected_track_item_i after sorting items
-				selected_track_item_i = get_hovered_track_item_i(tracks[selected_track_i][:])
-			}
 		}
 	}
+
+	slider_mouse_button_callback(window, button, action)
+
+	track_mouse_button_callback(window, button, action)
 }
 
 cursor_pos_callback :: proc "c" (window: glfw.WindowHandle, xpos, ypos: f64) {
@@ -201,122 +94,18 @@ cursor_pos_callback :: proc "c" (window: glfw.WindowHandle, xpos, ypos: f64) {
 		}
 		x_diff := x - x_prev
 		x_prev = x
-		if slider_dragged != nil {
-			s := slider_dragged
-			s_start := s.pos.x
-			s_end := s.pos.x + bar_width
-			if x < s_start {
-				if x_diff > 0 {
-					return
-				} else if s.value^ != 0 {
-					s.value^ = 0
-				}
-			} else if x > s_end {
-				if x_diff < 0 {
-					return
-				} else if s.value^ != s.max {
-					s.value^ = s.max
-				}
-			} else {
-				s.value^ = s.value^ + (f32(x_diff) / bar_width * s.max)
-			}
 
-			s.on_value_changed()
-		} else if selected_track_item_i > -1 {
-			selected_note := &tracks[selected_track_i][selected_track_item_i]
-			selected_note.start += math.round(x_diff / track_px_per_ms)
-		}
+		slider_cursor_drag_callback(x, x_diff)
+
+		track_cursor_drag_callback(x_diff)
+
 	} else {
-		slider_hovered = cursor_within_slider_bar()
-		if slider_hovered != nil {
-			x64, y64 := glfw.GetCursorPos(window)
-			x := f32(x64)
-			y := f32(y64)
-			s := slider_hovered
-			handle_x := s.value^ / s.max * bar_width - handle_size / 2
-			handle_y := (-handle_size + bar_height) / 2
-			handle_pos := s.pos + {handle_x, handle_y}
-			is_slider_handle_hovered =
-				x >= handle_pos.x &&
-				x <= handle_pos.x + handle_size &&
-				y >= handle_pos.y &&
-				y <= handle_pos.y + handle_size
-		} else {
-			is_slider_handle_hovered = false
-		}
-		button_hovered = cursor_within_button()
-		if slider_hovered != nil || button_hovered != nil {
-			glfw.SetCursor(window, glfw.CreateStandardCursor(glfw.POINTING_HAND_CURSOR))
-		} else {
+		is_cursor_set := slider_cursor_hover_callback(window)
+
+		is_cursor_set = is_cursor_set || button_cursor_hover_callback(window)
+
+		if !is_cursor_set {
 			glfw.SetCursor(window, nil)
 		}
 	}
-}
-
-cursor_within_slider_handle :: proc() -> ^Slider {
-	x64, y64 := glfw.GetCursorPos(window)
-	x := f32(x64)
-	y := f32(y64)
-	handle_y := (-handle_size + bar_height) / 2
-
-	for &slider, i in sliders {
-		handle_x := slider.value^ / slider.max * bar_width - handle_size / 2
-		handle_pos := slider.pos + {handle_x, handle_y}
-
-		if (x >= handle_pos.x &&
-			   x <= handle_pos.x + handle_size &&
-			   y >= handle_pos.y &&
-			   y <= handle_pos.y + handle_size) {
-			return &slider
-		}
-	}
-
-	return nil
-}
-
-cursor_within_slider_bar :: proc() -> ^Slider {
-	x64, y64 := glfw.GetCursorPos(window)
-	x := f32(x64)
-	y := f32(y64)
-	handle_y := (-handle_size + bar_height) / 2
-
-	for &s, i in sliders {
-		y_start := s.pos.y - handle_size / 2
-		y_end := y_start + handle_size
-		if x >= s.pos.x && x <= s.pos.x + bar_width && y >= y_start && y < y_end {
-			return &s
-		}
-	}
-
-	return nil
-}
-
-cursor_within_button :: proc() -> ^Button {
-	x64, y64 := glfw.GetCursorPos(window)
-	x := f32(x64)
-	y := f32(y64)
-
-	for &button in buttons {
-		if x >= button.pos.x &&
-		   x <= button.pos.x + button_width &&
-		   y >= button.pos.y &&
-		   y <= button.pos.y + button_height {
-			return &button
-		}
-	}
-
-	return nil
-}
-
-get_hovered_track_item_i :: proc(track_items: []TrackItem) -> int {
-	x64, y64 := glfw.GetCursorPos(window)
-	x := f32(x64)
-	for item, i in track_items {
-		note_x_start := item.start * track_px_per_ms
-		note_x_end := note_x_start + item.duration * track_px_per_ms
-		if x >= note_x_start && x <= note_x_end {
-			return i
-		}
-	}
-	return -1
 }
