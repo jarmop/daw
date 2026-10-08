@@ -227,7 +227,17 @@ compare_track_items :: proc(lhs, rhs: TrackItem) -> bool {
 // ------------------------------------------------
 
 selected_track_i: int = -1
+hovered_track_i: int = -1
 selected_track_item_i: int = -1
+hovered_track_item_i: int = -1
+
+TrackItemHold :: enum {
+	Center,
+	Left,
+	Right,
+}
+
+track_item_hold: TrackItemHold
 
 selected_item_backup: TrackItem
 
@@ -239,7 +249,7 @@ track_key_callback :: proc(key: i32, scancode: int, mode: i32) {
 	music_key_scancode_start := 16 // "Q"
 	music_key_scancode_end := music_key_scancode_start + 11 // The key after "Å"
 
-	note_selected := selected_track_i > -1 && selected_track_item_i > -1
+	note_selected := selected_track_item_i > -1
 	if note_selected {
 		selected_note := &tracks[selected_track_i][selected_track_item_i]
 		if scancode >= music_key_scancode_start && scancode <= music_key_scancode_end {
@@ -269,32 +279,16 @@ track_mouse_button_callback :: proc(window: glfw.WindowHandle, button, action: i
 		y := f32(y64)
 
 		if action == glfw.PRESS {
-			selected_track_i = -1
-			selected_track_item_i = -1
-
-			if x >= tracks_pos.x &&
-			   x <= tracks_pos.x + tracks_size.x &&
-			   y >= tracks_pos.y &&
-			   y <= tracks_pos.y + tracks_size.y {
-				track_pos := tracks_pos
-				for track, i in tracks {
-					if y >= track_pos.y && y <= track_pos.y + line_height {
-						selected_track_i = i
-						break
-					}
-					track_pos.y += line_height
-				}
-				selected_track_item_i = get_hovered_track_item_i(tracks[selected_track_i][:])
-				if selected_track_item_i > -1 {
-					copy_track_item(
-						tracks[selected_track_i][selected_track_item_i],
-						&selected_item_backup,
-					)
-				}
+			selected_track_i = hovered_track_i
+			selected_track_item_i = hovered_track_item_i
+			if selected_track_item_i > -1 {
+				copy_track_item(
+					tracks[selected_track_i][selected_track_item_i],
+					&selected_item_backup,
+				)
 			}
-
 		} else {
-			if selected_track_i > -1 && selected_track_item_i > -1 {
+			if selected_track_item_i > -1 {
 				if !item_is_valid(tracks[selected_track_i][:], selected_track_item_i) {
 					copy_track_item(
 						selected_item_backup,
@@ -304,7 +298,7 @@ track_mouse_button_callback :: proc(window: glfw.WindowHandle, button, action: i
 				}
 				sort_tracks()
 				// Update the selected_track_item_i after sorting items
-				selected_track_item_i = get_hovered_track_item_i(tracks[selected_track_i][:])
+				selected_track_item_i = hovered_track_item_i
 			} else if selected_track_i > -1 {
 				start := math.round((x - tracks_pos.x) * track_ms_per_px)
 				append(
@@ -320,7 +314,7 @@ track_mouse_button_callback :: proc(window: glfw.WindowHandle, button, action: i
 
 				sort_tracks()
 				// Update the selected_track_item_i after sorting items
-				selected_track_item_i = get_hovered_track_item_i(tracks[selected_track_i][:])
+				selected_track_item_i = hovered_track_item_i
 			}
 		}
 	}
@@ -329,8 +323,44 @@ track_mouse_button_callback :: proc(window: glfw.WindowHandle, button, action: i
 track_cursor_drag_callback :: proc(x_diff: f32) {
 	if selected_track_item_i > -1 {
 		selected_note := &tracks[selected_track_i][selected_track_item_i]
-		selected_note.start += math.round(x_diff / track_px_per_ms)
+
+		diff_ms := math.round(x_diff / track_px_per_ms)
+
+		switch track_item_hold {
+		case .Center:
+			selected_note.start += diff_ms
+		case .Left:
+			selected_note.start += diff_ms
+			selected_note.duration -= diff_ms
+		case .Right:
+			selected_note.duration += diff_ms
+		}
 	}
+}
+
+track_cursor_hover_callback :: proc(window: glfw.WindowHandle) -> bool {
+	x64, y64 := glfw.GetCursorPos(window)
+	x := f32(x64)
+	y := f32(y64)
+
+	hovered_track_i = -1
+
+	if x >= tracks_pos.x &&
+	   x <= tracks_pos.x + tracks_size.x &&
+	   y >= tracks_pos.y &&
+	   y <= tracks_pos.y + tracks_size.y {
+		track_pos := tracks_pos
+		for track, i in tracks {
+			if y >= track_pos.y && y <= track_pos.y + line_height {
+				hovered_track_i = i
+				break
+			}
+			track_pos.y += line_height
+		}
+		return track_handle_hovered_item(tracks[hovered_track_i][:])
+	}
+
+	return false
 }
 
 copy_track_item :: proc(from: TrackItem, to: ^TrackItem) {
@@ -339,15 +369,31 @@ copy_track_item :: proc(from: TrackItem, to: ^TrackItem) {
 	to.start = from.start
 }
 
-get_hovered_track_item_i :: proc(track_items: []TrackItem) -> int {
+track_handle_hovered_item :: proc(track_items: []TrackItem) -> bool {
 	x64, y64 := glfw.GetCursorPos(window)
 	x := f32(x64)
+
+	hovered_track_item_i = -1
+
 	for item, i in track_items {
-		note_x_start := item.start * track_px_per_ms
+		note_x_start := tracks_pos.x + item.start * track_px_per_ms
 		note_x_end := note_x_start + item.duration * track_px_per_ms
+		o: f32 = max(8, (note_x_end - note_x_start) / 10)
 		if x >= note_x_start && x <= note_x_end {
-			return i
+			if x < note_x_start + o {
+				glfw.SetCursor(window, glfw.CreateStandardCursor(glfw.RESIZE_EW_CURSOR))
+				track_item_hold = .Left
+			} else if x > note_x_end - o {
+				glfw.SetCursor(window, glfw.CreateStandardCursor(glfw.RESIZE_EW_CURSOR))
+				track_item_hold = .Right
+			} else {
+				glfw.SetCursor(window, glfw.CreateStandardCursor(glfw.POINTING_HAND_CURSOR))
+				track_item_hold = .Center
+			}
+			hovered_track_item_i = i
+			return true
 		}
 	}
-	return -1
+
+	return false
 }

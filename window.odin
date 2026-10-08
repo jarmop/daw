@@ -101,7 +101,7 @@ cursor_pos_callback :: proc "c" (window: glfw.WindowHandle, xpos, ypos: f64) {
 
 	} else {
 		is_cursor_set := slider_cursor_hover_callback(window)
-
+		is_cursor_set = is_cursor_set || track_cursor_hover_callback(window)
 		is_cursor_set = is_cursor_set || button_cursor_hover_callback(window)
 
 		if !is_cursor_set {
