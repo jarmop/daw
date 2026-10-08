@@ -217,7 +217,7 @@ toggle_playback :: proc() {
 		// generated_samples = generate_envelope_samples(envelope, frequency)
 		// generated_samples = generate_track_samples(track1_items)
 		i := 0
-		samples_count := int(frames_per_ms * get_tracks_duration(tracks[:]))
+		samples_count := int(frames_per_ms * get_tracks_duration(tracks))
 		for track_items in tracks {
 			if len(track_items) == 0 {
 				continue

@@ -13,7 +13,7 @@ SavedTrackItem :: struct {
 
 tracks_filename := "data/tracks"
 
-save_tracks :: proc(tracks: [][dynamic]TrackItem) {
+save_tracks :: proc(tracks: Tracks) {
 	track_items_count := 0
 	for track_items in tracks {
 		track_items_count += len(track_items)
@@ -40,7 +40,7 @@ save_tracks :: proc(tracks: [][dynamic]TrackItem) {
 	}
 }
 
-load_tracks :: proc() -> [][dynamic]TrackItem {
+load_tracks :: proc() -> Tracks {
 	bytes, read_err := os.read_entire_file(tracks_filename, context.allocator)
 	defer delete(bytes)
 
@@ -49,7 +49,13 @@ load_tracks :: proc() -> [][dynamic]TrackItem {
 	}
 
 	all_track_items := slice.reinterpret([]SavedTrackItem, bytes)
-	tracks := make([][dynamic]TrackItem, TRACK_COUNT)
+
+	track_count := 0
+	for item in all_track_items {
+		track_count = max(track_count, item.track_i + 1)
+	}
+
+	tracks := make(Tracks, track_count)
 	for item in all_track_items {
 		append(
 			&tracks[item.track_i],

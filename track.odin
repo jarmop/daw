@@ -27,8 +27,8 @@ TrackItem :: struct {
 	duration: f32,
 }
 
-TRACK_COUNT :: 4
-tracks: [][dynamic]TrackItem
+Tracks :: [dynamic][dynamic]TrackItem
+tracks: Tracks
 
 track_vao: u32
 track_vbo: u32
@@ -166,7 +166,7 @@ track_vertices_update :: proc() {
 	vbo_color_update(&notes_vbo, notes_vertices[:])
 }
 
-get_tracks_duration :: proc(tracks: [][dynamic]TrackItem) -> f32 {
+get_tracks_duration :: proc(tracks: Tracks) -> f32 {
 	tracks_duration: f32 = 0
 	for track_items in tracks {
 		tracks_duration = max(get_track_duration(track_items[:]), tracks_duration)
@@ -279,6 +279,7 @@ track_key_callback :: proc(key: i32, scancode: int, mode: i32) {
 		selected_track_item_i = -1
 	} else if key == glfw.KEY_S {
 		// wav_save()
+		save_tracks(tracks)
 	}
 }
 
