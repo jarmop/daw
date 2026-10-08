@@ -47,18 +47,6 @@ track_init_data :: proc() {
 		{midi = 60, start = 0, duration = 2000},
 		{midi = 60, start = 3000, duration = 500},
 	}
-	tracks[1] = {
-		{midi = 64, start = 0, duration = 2000},
-		{midi = 64, start = 3000, duration = 500},
-	}
-	tracks[2] = {
-		{midi = 67, start = 0, duration = 2000},
-		{midi = 67, start = 3000, duration = 500},
-	}
-	tracks[3] = {
-		{midi = 71, start = 0, duration = 2000},
-		{midi = 71, start = 3000, duration = 500},
-	}
 }
 
 track_init_ui :: proc() {

@@ -87,6 +87,9 @@ key_callback :: proc "c" (window: glfw.WindowHandle, key, scancode_i32, action, 
 		glfw.SetWindowShouldClose(window, true)
 	} else if key == glfw.KEY_SPACE {
 		toggle_playback()
+	} else if key == glfw.KEY_DELETE && selected_track_item_i > -1 {
+		ordered_remove(&tracks[selected_track_i], selected_track_item_i)
+		selected_track_item_i = -1
 	} else if key == glfw.KEY_S {
 		// wav_save()
 	}
