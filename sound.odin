@@ -89,7 +89,7 @@ play_sound :: proc() {
 	ma.device_uninit(&device)
 }
 
-envelope: []EnvelopeSegment = {{duration = 20}, {duration = 50}, {duration = 200}, {duration = 20}}
+envelope: []EnvelopeSegment = {{duration = 20}, {duration = 20}, {duration = 40}, {duration = 20}}
 
 envelope_sus_amp_ratio: f32 = 0.5
 

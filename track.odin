@@ -37,7 +37,7 @@ track_vertices: []ColorVertex
 tracks_size: Vec2
 tracks_pos: Vec2
 
-track_px_per_ms: f32 = 0.1
+track_px_per_ms: f32 = 0.16
 track_ms_per_px := 1 / track_px_per_ms
 
 notes_vao: u32
@@ -198,8 +198,8 @@ item_is_valid :: proc(track_items: []TrackItem, item_i: int) -> bool {
 
 		item2_start := item2.start
 		item2_end := item2.start + item2.duration
-		is_fully_before := item_end < item2_start
-		is_fully_after := item_start > item2_end
+		is_fully_before := item_end <= item2_start
+		is_fully_after := item_start >= item2_end
 
 		if is_fully_before || is_fully_after {
 			continue
@@ -408,7 +408,8 @@ track_handle_hovered_item :: proc(track_items: []TrackItem) -> bool {
 	for item, i in track_items {
 		note_x_start := tracks_pos.x + item.start * track_px_per_ms
 		note_x_end := note_x_start + item.duration * track_px_per_ms
-		o: f32 = max(8, (note_x_end - note_x_start) / 10)
+		// o: f32 = max(8, (note_x_end - note_x_start) / 10)
+		o: f32 = (note_x_end - note_x_start) / 10
 		if x >= note_x_start && x <= note_x_end {
 			if x < note_x_start + o {
 				glfw.SetCursor(window, glfw.CreateStandardCursor(glfw.RESIZE_EW_CURSOR))
